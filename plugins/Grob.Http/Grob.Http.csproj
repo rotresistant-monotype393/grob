@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Grob.Http</RootNamespace>
+    <AssemblyName>Grob.Http</AssemblyName>
+    <!-- First-party HTTP plugin. Reference implementation for the plugin model.
+         Built and tested exactly as a third-party plugin would be.
+         References Grob.Runtime only — no special treatment. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Grob.Core\Grob.Core.csproj" />
+    <ProjectReference Include="..\..\src\Grob.Runtime\Grob.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

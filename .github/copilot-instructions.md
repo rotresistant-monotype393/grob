@@ -32,7 +32,7 @@ decisions. When in doubt, check these documents before generating code.
 - No Oxford comma
 - `snake_case` for Grob language examples in docs and tests
 - C# naming conventions for implementation code (PascalCase types,
-  camelCase locals, _camelCase private fields)
+  camelCase locals, \_camelCase private fields)
 - Same-line braces in C# code
 - No `var` where the type is not obvious from the right-hand side
 - Prefer `switch` expressions over `if/else` chains for type dispatch
@@ -67,3 +67,6 @@ decisions. When in doubt, check these documents before generating code.
 - `docs/wiki/Type-Registry/` — built-in type members (compiler reference)
 - `docs/wiki/VM-Architecture/` — bytecode VM design
 - `docs/design/decisions-log.md` — authoritative design decisions
+- `docs/design/requirements-specification-v1.md` - definitve requirements specification and sprint plan
+- `docs/design/solution-architecture.md` - authoritative solution architecture
+

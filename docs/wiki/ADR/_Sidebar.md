@@ -11,7 +11,9 @@
 - [ADR-0009: Select Statement vs Switch Expression](0009-select-statement-vs-switch-expression.md)
 - [ADR-0010: Core Modules Auto-Available](0010-core-modules-auto-available.md)
 - [ADR-0011: NuGet as Plugin Registry](0011-nuget-as-plugin-registry.md)
+- [ADR-0012: Solution Structure and Assembly Naming](0012-solution-structure-and-naming.md)
 
 ---
 
 [← Home](../Home.md)
+

@@ -1,0 +1,6 @@
+{
+  "name": "grob",
+  "version": "0.1.0",
+  "description": "A statically typed scripting language that a hobbyist can learn and a developer can trust.",
+  "dependencies": {}
+}

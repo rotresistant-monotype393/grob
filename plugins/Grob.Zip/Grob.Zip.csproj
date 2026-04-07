@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Grob.Zip</RootNamespace>
+    <AssemblyName>Grob.Zip</AssemblyName>
+    <!-- First-party archive plugin: compress and expand zip archives.
+         References Grob.Runtime only. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Grob.Core\Grob.Core.csproj" />
+    <ProjectReference Include="..\..\src\Grob.Runtime\Grob.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>

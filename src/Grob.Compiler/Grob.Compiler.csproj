@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Grob.Compiler</RootNamespace>
+    <AssemblyName>Grob.Compiler</AssemblyName>
+    <!-- Source text to Chunk: Lexer, Parser, AST, TypeChecker, Compiler.
+         Three visitor passes. Does NOT reference Grob.Vm. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Grob.Core\Grob.Core.csproj" />
+    <ProjectReference Include="..\..\src\Grob.Runtime\Grob.Runtime.csproj" />
+  </ItemGroup>
+
+</Project>
