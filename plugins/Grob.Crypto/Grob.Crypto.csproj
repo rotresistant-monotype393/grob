@@ -7,6 +7,8 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Grob.Crypto</RootNamespace>
     <AssemblyName>Grob.Crypto</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <!-- First-party checksums and hashing plugin: MD5, SHA256, file integrity.
          References Grob.Runtime only. -->
   </PropertyGroup>

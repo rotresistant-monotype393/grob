@@ -8,6 +8,8 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Grob.Cli</RootNamespace>
     <AssemblyName>grob</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <!-- Entry point and composition root: grob.exe.
          Wires Compiler + Vm + Stdlib. Hosts REPL and all CLI commands.
          Nothing else references this assembly. -->

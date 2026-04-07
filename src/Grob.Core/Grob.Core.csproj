@@ -7,6 +7,8 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Grob.Core</RootNamespace>
     <AssemblyName>Grob.Core</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <!-- Shared primitives: Chunk, OpCode, GrobType, value types.
          No dependencies on any other Grob assembly. -->
   </PropertyGroup>

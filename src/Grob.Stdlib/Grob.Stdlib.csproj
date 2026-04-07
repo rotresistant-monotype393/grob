@@ -7,6 +7,8 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Grob.Stdlib</RootNamespace>
     <AssemblyName>Grob.Stdlib</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <!-- Core modules as IGrobPlugin implementations.
          FsPlugin, JsonPlugin, CsvPlugin, DatePlugin, etc.
          Auto-registered at VM startup by Grob.Cli. -->

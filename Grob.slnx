@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src\Grob.Core\Grob.Core.csproj" />
+    <Project Path="src\Grob.Runtime\Grob.Runtime.csproj" />
+    <Project Path="src\Grob.Compiler\Grob.Compiler.csproj" />
+    <Project Path="src\Grob.Vm\Grob.Vm.csproj" />
+    <Project Path="src\Grob.Stdlib\Grob.Stdlib.csproj" />
+    <Project Path="src\Grob.Cli\Grob.Cli.csproj" />
+  </Folder>
+  <Folder Name="/plugins/">
+    <Project Path="plugins\Grob.Http\Grob.Http.csproj" />
+    <Project Path="plugins\Grob.Crypto\Grob.Crypto.csproj" />
+    <Project Path="plugins\Grob.Zip\Grob.Zip.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests\Grob.Core.Tests\Grob.Core.Tests.csproj" />
+    <Project Path="tests\Grob.Compiler.Tests\Grob.Compiler.Tests.csproj" />
+    <Project Path="tests\Grob.Vm.Tests\Grob.Vm.Tests.csproj" />
+    <Project Path="tests\Grob.Stdlib.Tests\Grob.Stdlib.Tests.csproj" />
+    <Project Path="tests\Grob.Integration.Tests\Grob.Integration.Tests.csproj" />
+    <Project Path="tests\Grob.Tests\Grob.Tests.csproj" />
+  </Folder>
+</Solution>

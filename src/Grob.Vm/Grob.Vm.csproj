@@ -7,6 +7,8 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Grob.Vm</RootNamespace>
     <AssemblyName>Grob.Vm</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <!-- Execution engine: fetch/decode/execute loop, value stack, call frames,
          plugin loader, upvalue support. Does NOT reference Grob.Compiler. -->
   </PropertyGroup>

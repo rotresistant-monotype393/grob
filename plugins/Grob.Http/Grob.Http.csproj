@@ -7,6 +7,8 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Grob.Http</RootNamespace>
     <AssemblyName>Grob.Http</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <!-- First-party HTTP plugin. Reference implementation for the plugin model.
          Built and tested exactly as a third-party plugin would be.
          References Grob.Runtime only — no special treatment. -->

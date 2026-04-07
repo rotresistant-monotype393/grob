@@ -7,6 +7,8 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Grob.Runtime</RootNamespace>
     <AssemblyName>Grob.Runtime</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <!-- Public plugin contract: IGrobPlugin, GrobVM registration surface,
          FunctionSignature, GrobError hierarchy.
          Published as a NuGet package. Plugin authors reference this only. -->

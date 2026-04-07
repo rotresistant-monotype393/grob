@@ -7,6 +7,8 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Grob.Zip</RootNamespace>
     <AssemblyName>Grob.Zip</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <!-- First-party archive plugin: compress and expand zip archives.
          References Grob.Runtime only. -->
   </PropertyGroup>
