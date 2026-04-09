@@ -125,7 +125,7 @@ Grob Script (.grob)
 
 ### C# Solution Structure
 
-> **Authority:** `Grob___Solution_Architecture.md` (confirmed April 2026).
+> **Authority:** `solution-architecture.md` (confirmed April 2026).
 > This section summarises the confirmed solution architecture. The full
 > document covers assembly responsibilities, dependency constraints,
 > naming conventions and the Chunk boundary rationale in detail.
@@ -269,7 +269,7 @@ identifier node in a type-checked AST carries a non-null `ResolvedType`
 and a non-null `Declaration`. This makes the constraint testable and
 prevents regression.
 
-See `Grob___Tooling___Strategy.md` for full rationale.
+See `tooling-strategy.md` for full rationale.
 
 ### 3.2 Diagnostic Infrastructure
 
@@ -465,7 +465,7 @@ new features interactively, and the increment can run meaningful scripts.
 - C# solution with six `src/` projects (`Grob.Core`, `Grob.Runtime`,
   `Grob.Compiler`, `Grob.Vm`, `Grob.Stdlib`, `Grob.Cli`), three
   `plugins/` projects, and five `tests/` projects — as specified in
-  `Grob___Solution_Architecture.md`. .NET 10, self-contained deployment
+  `solution-architecture.md`. .NET 10, self-contained deployment
   target. Dependency graph enforced: Compiler and Vm never reference
   each other.
 - `TokenKind` enum — complete (see §3.4).
@@ -1050,8 +1050,8 @@ required. All are implemented as `IGrobPlugin` classes.
 | `path` | 11 functions, 1 constant | — |
 | `format` | 3 functions | — |
 
-Full API detail for each module is in `Grob___Stdlib___Reference.md`
-and the confirmed decisions in `Grob___Decisions___Context_Log.md`.
+Full API detail for each module is in `stdlib-reference.md`
+and the confirmed decisions in `decisions-log.md`.
 
 -----
 
@@ -1262,12 +1262,12 @@ Grob v1 is ready for public release when:
 -----
 
 *This document was created April 2026.*
-*It draws from: Grob___Decisions___Context_Log.md (authority),*
-*Grob___Solution_Architecture.md, Grob___Language_Fundamentals.md,*
-*Grob___Stdlib___Reference.md, Grob___Type___Registry.md,*
-*Grob___VM_Architecture___Design_Notes.md, Grob___Install___Strategy.md,*
-*Grob___Personality___Identity.md,*
-*Grob___Sample_Scripts___API_Surface_Validation.md, Grob_Plugins.md,*
-*SharpBASIC___Retrospective.md, ADR-0007 (solution structure and naming),*
+*It draws from: decisions-log.md (authority),*
+*solution-architecture.md, language-fundamentals.md,*
+*stdlib-reference.md, type-registry.md,*
+*vm-architecture-notes.md, install-strategy.md,*
+*personality.md,*
+*sample-scripts.md, plugins.md,*
+*retrospective.md, ADR-0007 (solution structure and naming),*
 *and past design session conversations.*
 *Update when the decisions log changes or sprint scope is adjusted.*

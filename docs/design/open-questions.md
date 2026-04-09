@@ -47,7 +47,7 @@ covers it) but the C# idiom argues against it.
 
 These questions have been decided. Full rationale is preserved here for reference.
 One-line resolutions are recorded in the confirmed decisions table of
-`Grob___Decisions___Context_Log.md`.
+`decisions-log.md`.
 
 -----
 
@@ -104,7 +104,7 @@ type Repo {
 understood by the type checker, consuming the constrained generics infrastructure.
 JSON nodes are accessed via `json.Node` with typed accessors (`asString()`, `asArray()`
 etc.) and mapped to user-defined types via `mapAs<T>()`. Full json module API specified
-in `Grob___Stdlib___Reference.md`.
+in `stdlib-reference.md`.
 
 -----
 
@@ -126,10 +126,10 @@ Single type holds both date and time. Full API locked — see confirmed decision
 -----
 
 *Resolved questions are summarised as one-line entries in the confirmed decisions*
-*table of `Grob___Decisions___Context_Log.md`. The full rationale is preserved here.*
+*table of `decisions-log.md`. The full rationale is preserved here.*
 
 -----
 
-*Document created April 2026 — extracted from Grob___Decisions___Context_Log.md.*
-*Authorised decisions recorded in Grob___Decisions___Context_Log.md.*
+*Document created April 2026 — extracted from decisions-log.md.*
+*Authorised decisions recorded in decisions-log.md.*
 *This document is the implementation reference — the decisions log is the authority.*

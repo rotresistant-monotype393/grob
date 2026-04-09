@@ -9,7 +9,7 @@
 > **Tooling note:** The keyword list and operator set in this document are the
 > authoritative source for the TextMate grammar (`grob.tmLanguage.json`).
 > When keywords are added or changed, the grammar must be updated.
-> See `Grob___Tooling___Strategy.md`.
+> See `tooling-strategy.md`.
 
 -----
 
@@ -640,5 +640,5 @@ No semicolons.
 -----
 
 *Document created April 2026 — language fundamentals design session.*
-*Authorised decisions recorded in Grob___Decisions___Context_Log.md.*
+*Authorised decisions recorded in decisions-log.md.*
 *This document is the implementation reference — the decisions log is the authority.*

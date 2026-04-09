@@ -193,6 +193,6 @@ and timezone members are specified in the confirmed decisions table (Apr 2026,
 
 -----
 
-*Document created April 2026 — extracted from Grob___Decisions___Context_Log.md.*
-*Authorised decisions recorded in Grob___Decisions___Context_Log.md.*
+*Document created April 2026 — extracted from decisions-log.md.*
+*Authorised decisions recorded in decisions-log.md.*
 *This document is the implementation reference — the decisions log is the authority.*

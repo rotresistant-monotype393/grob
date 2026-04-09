@@ -117,7 +117,7 @@ A program with type errors never reaches the VM. The VM stops on the FIRST runti
 **LSP dependency:** `Grob.Lsp` is a consumer of `Grob.Compiler`. Every AST node
 must carry a `SourceLocation` and every identifier node must carry a `Declaration`
 back-reference set by the type checker. This is a day-one compiler construction
-requirement — see `Grob___Tooling___Strategy.md`.
+requirement — see `tooling-strategy.md`.
 
 ---
 
@@ -320,6 +320,6 @@ The solution structure maps directly onto the locked implementation order:
 -----
 
 *Confirmed April 2026. Updated April 2026 — `Grob.Lsp` and `tooling/Grob.VsCode` added.*
-*Supersedes structural notes in Grob___VM_Architecture___Design_Notes.md.*
-*See `Grob___Tooling___Strategy.md` for LSP phased plan and SourceLocation requirements.*
+*Supersedes structural notes in vm-architecture-notes.md.*
+*See `tooling-strategy.md` for LSP phased plan and SourceLocation requirements.*
 *`Gro` as a type prefix abbreviation is explicitly not a Grob convention — always `Grob`.*
