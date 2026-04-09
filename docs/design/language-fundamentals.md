@@ -5,6 +5,11 @@
 > This document is the implementation reference for the parser, type checker,
 > and compiler for all foundational language features.
 > When this document and the decisions log conflict, the decisions log wins.
+>
+> **Tooling note:** The keyword list and operator set in this document are the
+> authoritative source for the TextMate grammar (`grob.tmLanguage.json`).
+> When keywords are added or changed, the grammar must be updated.
+> See `Grob___Tooling___Strategy.md`.
 
 -----
 

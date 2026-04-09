@@ -227,6 +227,50 @@ This means:
 - The compiler emits line information alongside every instruction.
 - The VM can report the exact source line of any runtime error.
 
+### 3.1.1 LSP-Enabling Properties — Day One
+
+These properties exist on AST nodes from the first line of compiler code.
+They cost one field per node and one assignment per identifier resolution.
+They are not used by the v1 runtime — they exist so the LSP (post-MVP)
+does not require a full type checker audit to retrofit.
+
+**`ResolvedType` on identifier nodes:** The type checker sets
+`GrobType ResolvedType` on every identifier node during its pass. This
+is the data the LSP's hover handler returns and the completions handler
+uses to query the type registry.
+
+**`Declaration` back-reference on identifier nodes:** The type checker
+sets `AstNode? Declaration` on every identifier node, pointing to the
+AST node where that name was declared. This is the data the LSP's
+go-to-definition handler returns.
+
+**`DeclaredAt` on symbol table entries:** Every `Symbol` in the symbol
+table carries `SourceLocation DeclaredAt`. This is set when the symbol
+is registered and never changes.
+
+```csharp
+class IdentifierNode : AstNode
+{
+    public string Name { get; init; }
+    public GrobType ResolvedType { get; set; }    // set by type checker
+    public AstNode? Declaration { get; set; }      // set by type checker
+}
+
+class Symbol
+{
+    public string Name { get; init; }
+    public GrobType Type { get; init; }
+    public SourceLocation DeclaredAt { get; init; }
+}
+```
+
+**Verification:** `Grob.Compiler.Tests` should assert that every
+identifier node in a type-checked AST carries a non-null `ResolvedType`
+and a non-null `Declaration`. This makes the constraint testable and
+prevents regression.
+
+See `Grob___Tooling___Strategy.md` for full rationale.
+
 ### 3.2 Diagnostic Infrastructure
 
 The `Diagnostics` namespace exists from Sprint 1. It provides:
@@ -467,6 +511,8 @@ arithmetic expressions and `print()`.
     `int op float → float` (implicit promotion), `string + string → string`.
     `int / int → int` (truncating). `int + string` is a compile error.
   - Comparison type rules.
+  - Set `ResolvedType` on every identifier node (§3.1.1).
+  - Set `Declaration` back-reference on every identifier node (§3.1.1).
   - Collect ALL errors — never stop at first.
 - Compiler (second AST visitor pass):
   - Emit typed arithmetic opcodes based on type checker annotations.

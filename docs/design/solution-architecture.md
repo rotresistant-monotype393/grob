@@ -16,17 +16,25 @@ Grob.sln
 │   ├── Grob.Compiler/          ← Lexer, Parser, AST, TypeChecker, Compiler
 │   ├── Grob.Vm/                ← VM execution engine — fetch/decode/execute, value stack, call frames
 │   ├── Grob.Stdlib/            ← Core stdlib as IGrobPlugin implementations
-│   └── Grob.Cli/               ← Entry point — grob.exe, REPL, CLI commands, composition root
+│   ├── Grob.Cli/               ← Entry point — grob.exe, REPL, CLI commands, composition root
+│   └── Grob.Lsp/               ← Language server — LSP implementation (Phase 4)
 ├── plugins/
 │   ├── Grob.Http/              ← First-party HTTP plugin — reference implementation
 │   ├── Grob.Crypto/            ← First-party checksums/hashing plugin
 │   └── Grob.Zip/               ← First-party archive plugin
-└── tests/
-    ├── Grob.Core.Tests/
-    ├── Grob.Compiler.Tests/
-    ├── Grob.Vm.Tests/
-    ├── Grob.Stdlib.Tests/
-    └── Grob.Integration.Tests/
+├── tests/
+│   ├── Grob.Core.Tests/
+│   ├── Grob.Compiler.Tests/
+│   ├── Grob.Vm.Tests/
+│   ├── Grob.Stdlib.Tests/
+│   └── Grob.Integration.Tests/
+└── tooling/
+    └── Grob.VsCode/             ← VS Code extension (TypeScript) — Phase 1 + Phase 3
+        ├── package.json
+        ├── syntaxes/
+        │   └── grob.tmLanguage.json
+        └── src/
+            └── extension.ts
 ```
 
 -----
@@ -106,6 +114,11 @@ It does not reference `Grob.Vm`. The compiler's job ends at `Chunk` production.
 **Error strategy:** Compiler and type checker collect ALL errors before execution.
 A program with type errors never reaches the VM. The VM stops on the FIRST runtime error.
 
+**LSP dependency:** `Grob.Lsp` is a consumer of `Grob.Compiler`. Every AST node
+must carry a `SourceLocation` and every identifier node must carry a `Declaration`
+back-reference set by the type checker. This is a day-one compiler construction
+requirement — see `Grob___Tooling___Strategy.md`.
+
 ---
 
 ### Grob.Vm
@@ -178,6 +191,24 @@ else references `Grob.Cli`. It is the only composition point in the solution.
 
 ---
 
+### Grob.Lsp
+
+The language server. Runs as a standalone process started by the VS Code extension.
+Consumes `Grob.Compiler` to provide editor intelligence — never executes scripts.
+
+**Contents:**
+
+- `Program` — entry point; wires stdin/stdout to `OmniSharp.Extensions.LanguageServer`
+- `DiagnosticsHandler` — runs the type checker on file change; pushes errors to the editor
+- `CompletionHandler` — resolves type at cursor position; queries `TypeRegistry` for members
+- `HoverHandler` — returns resolved type of identifier at cursor
+- `DefinitionHandler` — returns `Declaration.Location` for identifier at cursor
+
+**Key constraint:** `Grob.Lsp` references `Grob.Compiler`, `Grob.Core`, `Grob.Runtime`.
+It does not reference `Grob.Vm`. The LSP analyses code — it never runs it.
+
+---
+
 ### plugins/ — First-Party Plugins
 
 `Grob.Http`, `Grob.Crypto`, `Grob.Zip` live in `plugins/` and are built and tested
@@ -205,6 +236,13 @@ Grob.Cli
   └── Grob.Stdlib
         ├── Grob.Core
         └── Grob.Runtime
+
+Grob.Lsp
+  ├── Grob.Compiler
+  │     ├── Grob.Core
+  │     └── Grob.Runtime
+  ├── Grob.Core
+  └── Grob.Runtime
 
 plugins/Grob.Http
   └── Grob.Runtime
@@ -281,5 +319,7 @@ The solution structure maps directly onto the locked implementation order:
 
 -----
 
-*Confirmed April 2026. Supersedes structural notes in Grob___VM_Architecture___Design_Notes.md.*
+*Confirmed April 2026. Updated April 2026 — `Grob.Lsp` and `tooling/Grob.VsCode` added.*
+*Supersedes structural notes in Grob___VM_Architecture___Design_Notes.md.*
+*See `Grob___Tooling___Strategy.md` for LSP phased plan and SourceLocation requirements.*
 *`Gro` as a type prefix abbreviation is explicitly not a Grob convention — always `Grob`.*
