@@ -49,3 +49,6 @@ Desktop.ini
 # Test results
 TestResults/
 coverage/
+
+# Dev prompts
+.prompts/
