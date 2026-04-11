@@ -1,6 +1,6 @@
 # Grob
 
-[![CI](https://github.com/kwakker35/grob/actions/workflows/ci.yml/badge.svg)](https://github.com/kwakker35/grob/actions/workflows/ci.yml)
+[![CI](https://github.com/grob-lang/grob/actions/workflows/ci.yml/badge.svg)](https://github.com/grob-lang/grob/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com)
 [![Status](https://img.shields.io/badge/status-design%20complete-orange)](docs/design/decisions-log.md)
