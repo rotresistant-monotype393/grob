@@ -1,0 +1,9 @@
+// E0301 — a pair of types that form a non-nullable cycle, producing an infinite value
+// Eventual path: docs/errors/examples/type-cycle-no-terminating-field/type-cycle-no-terminating-field.grob
+type Parent {
+    child: Child
+}
+
+type Child {
+    parent: Parent
+}

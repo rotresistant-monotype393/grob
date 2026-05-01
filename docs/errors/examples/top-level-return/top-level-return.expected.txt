@@ -1,0 +1,8 @@
+error[E2203]: top-level `return`
+  --> top-level-return.grob:5:5
+   |
+ 5 |     return
+   |     ^^^^^^
+   |
+   = note: `return` is not valid at script level
+   = help: use `exit(0)` to terminate the script successfully

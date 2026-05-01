@@ -1,0 +1,9 @@
+error[E5501]: JSON parse error
+  --> json-parse-error.grob:4:7
+   |
+ 4 | cfg := json.parse(raw)
+   |        ^^^^^^^^^^^^^^^
+   |
+   = note: the input read from 'raw' is not well-formed JSON
+   = note: parse failed at line 3, column 14 of the JSON input
+   = help: validate the source file before parsing, or wrap in `try { } catch (e: JsonError) { }`

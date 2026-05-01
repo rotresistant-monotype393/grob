@@ -1,0 +1,9 @@
+error[E0001]: type mismatch
+  --> type-mismatch-bool-arithmetic.grob:3:12
+   |
+ 3 |     return active + 1
+   |            ^^^^^^^^^^
+   |
+   = note: expected: int + int, or float + float
+   = note: got: bool + int
+   = note: 'active' has type bool

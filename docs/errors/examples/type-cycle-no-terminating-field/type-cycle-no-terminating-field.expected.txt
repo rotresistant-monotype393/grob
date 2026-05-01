@@ -1,0 +1,9 @@
+error[E0301]: type cycle with no terminating field
+  --> type-cycle-no-terminating-field.grob:8:5
+   |
+ 8 |     parent: Parent
+   |     ^^^^^^^^^^^^^^
+   |
+   = note: 'Child.parent' has type Parent, which contains 'Parent.child: Child', forming a cycle
+   = note: all fields in the cycle are non-nullable; the type would be infinite in size
+   = help: break the cycle with a nullable field, e.g. `parent: Parent?`

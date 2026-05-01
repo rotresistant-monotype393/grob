@@ -1,0 +1,8 @@
+error[E5602]: process exit non-zero
+  --> process-exit-nonzero.grob:3:10
+   |
+ 3 | result := process.runOrFail("git", ["push", "origin", "main"])
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: subprocess 'git' exited with code 1
+   = help: use `process.run()` and inspect `.exitCode` to handle non-zero exits without throwing

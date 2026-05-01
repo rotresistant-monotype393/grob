@@ -1,0 +1,9 @@
+error[E0002]: incompatible operands
+  --> incompatible-operands-string-comparison.grob:4:12
+   |
+ 4 |     return label > threshold
+   |            ^^^^^^^^^^^^^^^^^
+   |
+   = note: operator `>` requires both operands to have the same ordered type
+   = note: left operand 'label' has type string
+   = note: right operand 'threshold' has type int

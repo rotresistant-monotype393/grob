@@ -1,0 +1,9 @@
+// E1002 — accessing a field that does not exist on the declared type
+// Eventual path: docs/errors/examples/undefined-member-access/undefined-member-access.grob
+type Config {
+    host: string
+    port: int
+}
+
+cfg := Config { host: "localhost", port: 8080 }
+print(cfg.timeout)

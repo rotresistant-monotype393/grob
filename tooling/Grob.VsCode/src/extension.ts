@@ -1,32 +1,12 @@
-import * as path from "path";
-import { ExtensionContext } from "vscode";
-import {
-    LanguageClient,
-    LanguageClientOptions,
-    ServerOptions,
-    TransportKind,
-} from "vscode-languageclient/node";
+// Grob VS Code extension — Phase 1 (TextMate grammar only)
+// Phase 3 will add LSP integration via grob-lsp server process.
+import * as vscode from 'vscode';
 
-let client: LanguageClient;
-
-export function activate(context: ExtensionContext) {
-    // Path to the Grob LSP executable — adjust for published location
-    const serverPath = path.join(context.extensionPath, "..", "..", "src", "Grob.Lsp", "bin", "Debug", "net10.0", "Grob.Lsp.exe");
-
-    const serverOptions: ServerOptions = {
-        run: { command: serverPath, transport: TransportKind.stdio },
-        debug: { command: serverPath, transport: TransportKind.stdio },
-    };
-
-    const clientOptions: LanguageClientOptions = {
-        documentSelector: [{ scheme: "file", language: "grob" }],
-    };
-
-    client = new LanguageClient("grob", "Grob Language Server", serverOptions, clientOptions);
-    client.start();
+export function activate(_context: vscode.ExtensionContext): void {
+    // Phase 1: grammar activation is handled declaratively via package.json.
+    // No programmatic activation needed until Phase 3 (LSP).
 }
 
-export function deactivate(): Thenable<void> | undefined {
-    if (!client) return undefined;
-    return client.stop();
+export function deactivate(): void {
+    // Nothing to clean up in Phase 1.
 }

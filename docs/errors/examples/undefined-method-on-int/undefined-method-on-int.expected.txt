@@ -1,0 +1,8 @@
+error[E0006]: undefined method on type
+  --> undefined-method-on-int.grob:4:7
+   |
+ 4 | print(score.toLower())
+   |       ^^^^^^^^^^^^^^^^
+   |
+   = note: type int has no method 'toLower'
+   = note: 'toLower' is defined on type string

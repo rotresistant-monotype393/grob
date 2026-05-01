@@ -1,0 +1,9 @@
+error[E0102]: nullable interpolation
+  --> nullable-interpolation.grob:4:22
+   |
+ 4 |     return "Hello, ${title}"
+   |                      ^^^^^
+   |
+   = note: 'title' has type string?; string interpolation requires a non-nullable value
+   = help: provide a fallback: `${title ?? ""}`
+   = help: narrow the type first: `if (title != nil) { return "Hello, ${title}" }`

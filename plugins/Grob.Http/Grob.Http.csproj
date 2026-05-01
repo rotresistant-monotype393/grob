@@ -1,15 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Grob.Http</RootNamespace>
-    <AssemblyName>Grob.Http</AssemblyName>
-    <!-- First-party HTTP plugin. Reference implementation for the plugin model.
-         Built and tested exactly as a third-party plugin would be.
-         References Grob.Runtime only — no special treatment. -->
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!-- Plugin packages are tagged grob-plugin for NuGet discovery -->
+    <PackageTags>grob-plugin</PackageTags>
   </PropertyGroup>
 
+  <!-- First-party plugins reference Grob.Runtime only — this is the contract -->
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Grob.Core\Grob.Core.csproj" />
     <ProjectReference Include="..\..\src\Grob.Runtime\Grob.Runtime.csproj" />
   </ItemGroup>
 

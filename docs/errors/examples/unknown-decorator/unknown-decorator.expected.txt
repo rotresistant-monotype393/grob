@@ -1,0 +1,8 @@
+error[E4001]: unknown decorator
+  --> unknown-decorator.grob:3:5
+   |
+ 3 |     @admin
+   |     ^^^^^^
+   |
+   = note: '@admin' is not a recognised decorator
+   = help: valid decorators in v1: `@secure`, `@allowed(...)`, `@minLength(n)`, `@maxLength(n)`

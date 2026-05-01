@@ -1,0 +1,8 @@
+error[E2201]: `import` after declaration
+  --> import-after-declaration.grob:5:1
+   |
+ 5 | import Grob.Http
+   | ^^^^^^
+   |
+   = note: `import` statements must precede all declarations and top-level code
+   = help: move all `import` statements to the top of the file

@@ -1,0 +1,6 @@
+// E0201 — reassigning a `const` binding
+const maxRetries := 3
+
+maxRetries = 5
+
+print(maxRetries)

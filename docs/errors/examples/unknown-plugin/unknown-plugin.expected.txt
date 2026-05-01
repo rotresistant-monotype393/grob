@@ -1,0 +1,9 @@
+error[E3001]: unknown plugin
+  --> unknown-plugin.grob:2:8
+   |
+ 2 | import Grob.Foo
+   |        ^^^^^^^^
+   |
+   = note: 'Grob.Foo' is not installed and is not present on any configured registry
+   = help: install with: `grob install Grob.Foo`
+   = help: search the registry: `grob search foo`

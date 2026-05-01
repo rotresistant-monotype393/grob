@@ -1,15 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Grob.Vm</RootNamespace>
-    <AssemblyName>Grob.Vm</AssemblyName>
-    <!-- Execution engine: fetch/decode/execute loop, value stack, call frames,
-         plugin loader, upvalue support. Does NOT reference Grob.Compiler. -->
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
+  <!-- Grob.Vm must NOT reference Grob.Compiler — DAG rule -->
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Grob.Core\Grob.Core.csproj" />
-    <ProjectReference Include="..\..\src\Grob.Runtime\Grob.Runtime.csproj" />
+    <ProjectReference Include="..\Grob.Core\Grob.Core.csproj" />
+    <ProjectReference Include="..\Grob.Runtime\Grob.Runtime.csproj" />
   </ItemGroup>
 
 </Project>

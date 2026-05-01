@@ -1,0 +1,8 @@
+error[E3002]: plugin not installed
+  --> plugin-not-installed.grob:3:8
+   |
+ 3 | import Grob.SharePoint
+   |        ^^^^^^^^^^^^^^^
+   |
+   = note: 'Grob.SharePoint' is known to the registry but is not installed
+   = help: install with: `grob install Grob.SharePoint`

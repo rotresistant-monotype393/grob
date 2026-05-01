@@ -1,0 +1,10 @@
+// E5902 — a top-level initialiser reads a top-level binding declared later
+readonly tagline := buildTagline()
+
+fn buildTagline(): string {
+    return "${product} — built for scripting"
+}
+
+readonly product := "Grob"
+
+print(tagline)

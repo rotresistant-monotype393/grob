@@ -1,0 +1,8 @@
+error[E0202]: reassignment of `readonly` binding
+  --> readonly-reassignment.grob:5:1
+   |
+ 5 | runId = "override"
+   | ^^^^^
+   |
+   = note: 'runId' is declared `readonly` on line 3
+   = help: use `:=` instead of `readonly` if the binding needs to change after initialisation

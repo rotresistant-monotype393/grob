@@ -1,0 +1,10 @@
+error[E5902]: circular initialisation
+  --> circular-initialisation.grob:5:15
+   |
+ 5 |     return "${product} — built for scripting"
+   |               ^^^^^^^
+   |
+   = note: 'product' was read before its declaration on line 8 had executed
+   = note: 'tagline' is currently initialising on line 2 and called `buildTagline()`
+   = note: top-level initialisers run in source order; reading a binding declared later is a runtime error
+   = help: declare 'product' before 'tagline', or move the read inside a function called after startup

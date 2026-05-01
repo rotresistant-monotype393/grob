@@ -1,0 +1,9 @@
+error[E3101]: ambiguous unqualified type reference
+  --> ambiguous-type-reference.grob:5:14
+   |
+ 5 | fn handle(r: Response): int {
+   |              ^^^^^^^^
+   |
+   = note: 'Response' is registered by `Grob.Http` (imported on line 2)
+   = note: 'Response' is registered by `Acme.Api` (imported on line 3)
+   = help: alias one of the imports: `import Acme.Api as acme` then write `acme.Response`

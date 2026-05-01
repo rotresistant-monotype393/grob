@@ -1,0 +1,10 @@
+error[E2204]: `try` without `catch` or `finally`
+  --> try-without-catch-or-finally.grob:3:5
+   |
+ 3 |     try {
+   |     ^^^
+   |
+   = note: a `try` block must be followed by at least one `catch` clause or a `finally` block
+   = help: handle a specific failure: `try { ... } catch (e: IoError) { ... }`
+   = help: handle any failure: `try { ... } catch e { ... }`
+   = help: run cleanup unconditionally: `try { ... } finally { ... }`

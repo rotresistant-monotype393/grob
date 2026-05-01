@@ -1,0 +1,9 @@
+error[E5301]: file not found
+  --> file-not-found.grob:2:19
+   |
+ 2 | const settings := fs.read(`C:\config\settings.json`)
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: path: C:\config\settings.json
+   = help: guard with `fs.exists(path)` before reading
+   = help: catch the failure: `try { fs.read(path) } catch (e: IoError) { ... }`

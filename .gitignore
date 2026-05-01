@@ -40,15 +40,15 @@ ehthumbs.db
 Desktop.ini
 .DS_Store
 
-# Grob local packages
+# Grob local packages directory
 .grob/
 
-# Grob bytecode cache
+# Grob bytecode cache directory (D-298)
+.grob/cache/
+
+# Grob compiled bytecode files
 *.grobc
 
 # Test results
 TestResults/
 coverage/
-
-# Dev prompts
-.prompts/

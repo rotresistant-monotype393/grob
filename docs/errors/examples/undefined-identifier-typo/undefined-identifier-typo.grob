@@ -1,0 +1,6 @@
+// E1001 — referencing an identifier that was never declared
+fn greet(name: string): string {
+    return "Hello, ${nmae}"
+}
+
+print(greet("world"))

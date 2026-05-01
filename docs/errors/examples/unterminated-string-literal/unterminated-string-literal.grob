@@ -1,0 +1,6 @@
+// E2002 — string literal opened on line 3 and never closed before end of file
+fn banner(): string {
+    return "Welcome to Grob
+}
+
+print(banner())

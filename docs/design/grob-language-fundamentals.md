@@ -1,0 +1,2065 @@
+# Grob — Language Fundamentals
+
+> Specification document for core language syntax and semantics.
+> Decisions authorised in the decisions log — April 2026 fundamentals session.
+> This document is the implementation reference for the parser, type checker,
+> and compiler for all foundational language features.
+> When this document and the decisions log conflict, the decisions log wins.
+> 
+> **Tooling note:** The keyword list and operator set in this document are the
+> authoritative source for the TextMate grammar (`grob.tmLanguage.json`).
+> When keywords are added or changed, the grammar must be updated.
+> See `grob-tooling-strategy.md`.
+
+-----
+
+## 1. Control Flow — `if/else`
+
+```grob
+if (condition) {
+    // then block
+}
+
+if (condition) {
+    // then block
+} else {
+    // else block
+}
+
+if (condition) {
+    // then block
+} else if (condition) {
+    // else if block
+} else {
+    // fallback block
+}
+```
+
+**Rules:**
+
+- Parentheses around the condition are required.
+- Opening brace must be on the same line as the `if` or `else if` keyword.
+- `else if` is two keywords — not `elif` or `elsif`.
+- `else {` must be on the same line as the closing brace of the preceding block.
+- Nesting is unlimited — no compiler limit, convention only.
+- `if/else` is a **statement**, not an expression. It cannot appear in expression
+  position. Expression-position conditionals use ternary `? :` (two-way) or switch
+  expression (multi-branch).
+
+-----
+
+## 2. Control Flow — `while`
+
+```grob
+while (condition) {
+    // body
+}
+```
+
+**Rules:**
+
+- Parentheses around the condition are required.
+- Opening brace must be on the same line as `while`.
+- `do...while` is deferred post-MVP.
+- `for...in` and functional methods are the preferred style for collection
+  iteration. `while` exists for condition-driven loops where no collection
+  is being iterated.
+
+-----
+
+## 3. Control Flow — `select/case`
+
+`select` is the multi-branch statement for executing blocks based on a matched
+value. It is distinct from the switch expression, which produces a value.
+
+```grob
+select (value) {
+    case 0 {
+        print("Zero")
+    }
+    case 1, 2 {
+        print("One or two")
+    }
+    case "error" {
+        log.error("Error state")
+    }
+    default {
+        print("Something else: ${value}")
+    }
+}
+```
+
+**Rules:**
+
+- Parentheses around the subject value are required.
+- First matching case executes. No fall-through.
+- Multiple values per case arm: `case 1, 2 { }` — matches either value.
+- `default` arm is optional. If omitted and no case matches, execution continues
+  past the `select` block with no error.
+- Exhaustiveness is **not** enforced on `select` statements. (The switch
+  *expression* enforces exhaustiveness because a missing case means a missing
+  value — `select` has no such constraint.)
+- Works on any comparable type: `int`, `string`, `bool`.
+- `break` does not apply inside `select` — no fall-through means it is never
+  needed. To exit an enclosing loop from inside a `select`, restructure into a
+  function and use `return`, or use a flag variable.
+- `select` is always a **statement**. The switch expression (`value switch { }`)
+  is always an **expression**. The two forms are syntactically unambiguous.
+
+-----
+
+## 3.1 Conditional Expression — Switch Expression
+
+`switch` is the multi-branch expression for producing a value from a matched
+pattern. It is distinct from the `select` statement (§3), which executes blocks
+without producing a value.
+
+```grob
+// Value patterns
+message := http_code switch {
+    200 => "OK",
+    404 => "Not found",
+    500 => "Server error",
+    _   => "Unknown"
+}
+
+// Relational patterns
+status := used_pct switch {
+    >= crit_percent => "CRITICAL",
+    >= warn_percent => "WARNING",
+    _               => "OK"
+}
+
+// Nullable scrutinee
+label := user switch {
+    nil => "anonymous",
+    _   => user.name
+}
+```
+
+**Pattern forms.** Three pattern forms are legal in v1:
+
+- **Value pattern** — a compile-time constant expression of the scrutinee's
+  type. Literals and `const`-bound identifiers are valid; function calls and
+  mutable bindings are not. `nil` is a valid value pattern when the scrutinee
+  is nullable. `nil` on a non-nullable scrutinee is a compile error.
+- **Relational pattern** — `>= expr`, `> expr`, `<= expr`, `< expr`, where
+  `expr` is a compile-time constant. Legal only when the scrutinee is of an
+  ordered type (`int`, `float`, `string`, `date`). `==` and `!=` are not
+  relational-pattern operators — equality is the value-pattern form, and a
+  "not equal to X" arm would not admit useful exhaustiveness analysis.
+- **Catch-all** — `_`. Matches any value.
+
+**Arm separator.** Arms are separated by commas. A trailing comma after the
+final arm is permitted (§16). Newline-as-separator is not supported.
+
+**Evaluation.** Arms are tested in source order. The first matching arm wins;
+subsequent arms are not evaluated. This matches the convention of Rust, F#,
+Scala, and every major pattern-matching language.
+
+**Exhaustiveness.** The type checker enforces exhaustiveness. A switch
+expression is exhaustive when:
+
+- A `_` arm is present, or
+- The scrutinee is `bool` and both `true` and `false` are matched, or
+- The scrutinee is nullable `T?` and `nil` is matched and `T` is otherwise
+  exhaustively covered.
+
+Relational patterns never contribute to exhaustiveness. Any switch using a
+relational arm requires `_`.
+
+**Types.** Pattern expressions must be assignable to the scrutinee type —
+`"foo"` against an `int` scrutinee is a compile error. All arm results must
+produce the same type; mismatched arm types are compile errors.
+
+**Deferred post-MVP.** Multi-value arms (`200, 201 =>`), range patterns
+(`100..199 =>`), and type patterns (`string s =>`) are not in v1. Each is an
+additive grammar extension — adding them later requires no rework of the v1
+pattern forms.
+
+-----
+
+## 4. Control Flow — `break` and `continue`
+
+```grob
+for file in files {
+    if (file.name == "skip.log") {
+        continue
+    }
+    if (file.size > maxSize) {
+        break
+    }
+    process(file)
+}
+```
+
+**Rules:**
+
+- `break` exits the innermost enclosing loop immediately.
+- `continue` skips the remainder of the current iteration and proceeds to the next.
+- Both work in `for...in` and `while` loops.
+- Both are statements — they may not appear outside a loop body. Using either
+  outside a loop is a compile error.
+- Labelled break (for breaking an outer loop from inside a nested loop) is
+  deferred post-MVP. The v1 alternative is to extract the inner loop into a
+  function and use `return`.
+
+-----
+
+## 5. Loops — `for...in`
+
+### Collection iteration
+
+```grob
+// Value only — array
+for file in files {
+    print(file.name)
+}
+
+// Index and value — array
+for i, file in files {
+    print("${i}: ${file.name}")
+}
+
+// Key and value — map (two-identifier form required)
+for k, v in headers {
+    print("${k}: ${v}")
+}
+```
+
+**Rules:**
+
+- `for item in collection { }` — confirmed syntax.
+- `for i, item in collection { }` — index form for arrays. `i` is zero-based
+  `int`, inferred.
+- The single-identifier form always binds the **value**, not the index.
+- Both identifiers are declared by the `for` statement — no `:=` in the loop
+  header. Both are scoped to the loop body.
+- The loop variable is **immutable** within the body — reassigning it is a compile
+  error.
+
+**Iterable types in v1 — special-cased by the compiler:**
+
+The compiler handles three `for...in` cases. Any other type in subject position
+is a compile error.
+
+1. **Numeric range** (`for i in 0..10`) — lowered to `while`. See numeric range
+   section below.
+2. **`T[]` array** — lowered to an index-based `while` loop. Both
+   single-identifier and two-identifier forms supported.
+3. **`map<K, V>`** — iterates keys in insertion order. The **two-identifier form
+   is required** (`for k, v in myMap`). The single-identifier form on a map is a
+   compile error:
+   
+   ```
+   error: `for k in myMap` is not valid for map<K, V>.
+   Use `for k, v in myMap` to iterate key-value pairs,
+   or `for k in myMap.keys` to iterate keys only.
+   ```
+   
+   Lowered to a `while` loop over an internal keys array.
+
+A formal iterable protocol is post-MVP. The compiler architecture accommodates
+it without rework — the three special cases become the first implementors of the
+protocol when it is defined.
+
+### Numeric range iteration
+
+```grob
+// Basic range — inclusive both bounds
+for i in 0..10 { }          // 0, 1, 2 ... 10
+
+// With step
+for i in 0..100 step 5 { }  // 0, 5, 10 ... 100
+
+// Descending
+for i in 10..0 step -1 { }  // 10, 9, 8 ... 0
+```
+
+**Rules:**
+
+- `..` operator — both bounds are **inclusive**.
+- `step` is optional. Default step is `1`.
+- Step may be any non-zero `int` literal or variable.
+- A descending range without an explicit negative step is a **compile error** —
+  `for i in 10..0 { }` without `step -1` would produce an infinite loop and is
+  rejected at compile time.
+- The loop variable is `int`, declared by the `for` statement, immutable within
+  the body.
+- The compiler lowers range loops to `while`. The VM never sees range opcodes.
+- `..` is a range-specific operator in v1 — it does not appear in other expression
+  contexts.
+
+-----
+
+## 6. Operators
+
+### Arithmetic
+
+|Operator|Operation                      |Notes                       |
+|--------|-------------------------------|----------------------------|
+|`+`     |Addition / string concatenation|                            |
+|`-`     |Subtraction                    |                            |
+|`*`     |Multiplication                 |                            |
+|`/`     |Division                       |See division rules below    |
+|`%`     |Modulo                         |See modulo rules below      |
+
+**Integer division:** `int / int → int` (truncating toward zero). `-7 / 2` is
+`-3`, not `-4`. No separate floor-division operator — the operand types
+determine the result. `x / 0` throws `ArithmeticError` — consistent with `x % 0`,
+`x / 0.0`, and `x % 0.0`. Integer division by zero is never silent.
+
+**Float division:** `float / float → float`. Division by zero (`x / 0.0`)
+throws `ArithmeticError`, not infinity.
+
+**Mixed division:** `int / float` and `float / int` promote the `int` to
+`float`. The result is `float`.
+
+**Integer modulo:** `int % int → int`. The result has the sign of the dividend
+(the left operand), following C#'s `long % long` and C's `%` semantics.
+`-7 % 3` is `-1`, not `2`. `x % 0` throws `ArithmeticError`.
+
+**Float modulo:** `float % float → float`, following IEEE 754 `fmod` semantics
+as implemented by C#'s `double % double`. The result has the sign of the
+dividend. `-7.5 % 2.0` is `-1.5`. `x % 0.0` throws `ArithmeticError` — consistent
+with division by zero.
+
+**Mixed modulo:** `int % float` and `float % int` promote the `int` to
+`float`. The result is `float`.
+
+**NaN and Infinity:** If either operand of `%` is `NaN` or `±Infinity`
+(produced only by `math` functions such as `math.sqrt(-1.0)`), the result
+follows IEEE 754: `NaN % y` and `x % NaN` are `NaN`; `±Infinity % y` is `NaN`;
+`x % ±Infinity` is `x`. These cases are not errors — the language propagates
+non-finite values through arithmetic silently.
+
+**String concatenation:** `+` on strings is valid. `string + int` is a compile
+error — no implicit conversion. Use `.toString()` or string interpolation.
+
+### Comparison
+
+|Operator|Operation            |
+|--------|---------------------|
+|`==`    |Equal                |
+|`!=`    |Not equal            |
+|`<`     |Less than            |
+|`>`     |Greater than         |
+|`<=`    |Less than or equal   |
+|`>=`    |Greater than or equal|
+
+### Logical
+
+|Operator    |Operation  |Notes                                                          |
+|------------|-----------|---------------------------------------------------------------|
+|`&&`        |Logical AND|Short-circuit — right operand not evaluated if left is `false` |
+|`\|\|`    |Logical OR |Short-circuit — right operand not evaluated if left is `true`  |
+|`!`         |Logical NOT|                                                               |
+
+### Unary
+
+|Operator|Operation          |
+|--------|-------------------|
+|`-`     |Arithmetic negation|
+|`!`     |Logical NOT        |
+
+### Other
+
+|Operator|Operation                                                      |
+|--------|---------------------------------------------------------------|
+|`??`    |Nil coalescing — `a ?? b` returns `a` if non-nil, otherwise `b`|
+|`?.`    |Optional chaining — `a?.foo` returns nil if `a` is nil         |
+|`..`    |Range (numeric for loops only in v1)                           |
+
+Bitwise operators are not in scope for v1.
+
+Declaration (`:=`), assignment (`=`, `+=`, `-=`, `*=`, `/=`, `%=`), and
+increment/decrement (`++`, `--`) are **statement forms**, not expressions.
+They are specified in §28.
+
+-----
+
+## 7. Operator Precedence
+
+Highest to lowest. Parentheses override precedence at any level. This table
+describes **expression-level operators only**. Statement forms (declaration,
+assignment, increment, decrement, `throw`) are not expressions and appear
+in §28.
+
+|Level       |Operators            |Notes                                               |
+|------------|---------------------|----------------------------------------------------|
+|1 (highest) |`()`, `[]`, `.`, `?.`|Postfix — call, index, member access, optional chain|
+|2           |`-` (unary), `!`     |Prefix                                              |
+|3           |`*`, `/`, `%`        |Multiplicative                                      |
+|4           |`+`, `-`             |Additive                                            |
+|5           |`..`                 |Range (numeric `for` loops only in v1)              |
+|6           |`<`, `>`, `<=`, `>=` |Comparison                                          |
+|7           |`==`, `!=`           |Equality                                            |
+|8           |`&&`                 |Logical AND — short-circuit                         |
+|9           |`\|\|`               |Logical OR — short-circuit                          |
+|10          |`??`                 |Nil coalescing                                      |
+|11          |`? :` (ternary)      |Conditional expression                              |
+|12 (lowest) |`=>`                 |Lambda arrow — body expression binds loosely        |
+
+This matches C-family precedence with the addition of `??` and `..`. `??` binds
+tighter than ternary, consistent with C#, Kotlin, Swift, and TypeScript — the
+reference languages for Grob's nullable operator family. The Pratt parser
+implements this table as binding powers; this table is the canonical reference
+for the implementation.
+
+-----
+
+## 8. Literals
+
+### Integer literals
+
+```grob
+42          // decimal
+0           // zero
+-1          // negative
+0xFF        // hexadecimal
+0xff        // hexadecimal — case insensitive
+0b1010      // binary
+1_000_000   // underscore separator — readability only, ignored by compiler
+0xFF_FF     // underscores valid in hex and binary literals too
+```
+
+### Float literals
+
+```grob
+3.14        // standard
+0.5         // leading zero required — .5 is not valid
+1_000.50    // underscore separator — readability only, same as integers
+```
+
+Leading dot (`.5`) is not valid — a leading digit is always required.
+
+Scientific notation (`1.5e10`, `2.3E-4`) is deferred to post-MVP.
+
+### String literals
+
+Three string forms. Each maps to a distinct developer intent.
+
+```grob
+"hello"                     // double-quoted — standard form
+"Hello ${name}"             // interpolation — confirmed load-bearing
+`C:\Users\chris\docs`       // single backtick — inline raw, no escape processing
+`/^\d+$/`                   // single backtick — regex patterns
+```
+
+```grob
+query := ```
+SELECT *
+FROM users
+WHERE active = 1
+```                         // triple backtick — multiline verbatim block
+```
+
+**Double-quoted strings**
+
+- Standard form for most string values.
+- Support escape sequences: `\n`, `\r`, `\t`, `\\`, `\"`, `\$`.
+- Support `${expr}` interpolation.
+- Do not span lines — a newline before the closing `"` is a compile error.
+- `\$` produces a literal `$` without triggering interpolation.
+- `\r` produces a carriage return — needed for explicit `\r\n` Windows line endings.
+- Any other `\x` sequence not in the set above is a compile error — no silent
+  pass-through of unknown escapes.
+
+**Nullable interpolation.** Interpolating a nullable-typed expression (`T?`)
+is a compile error. Before a nullable value can appear in an interpolation
+slot, it must be resolved to `T` — usually by `?? <fallback>`, sometimes by
+narrowing inside an `if (x != nil)` block.
+
+```grob
+user: User? := findUser(id)
+
+msg := "Hello ${user.name}"               // compile error — user is nullable
+msg := "Hello ${user?.name}"              // compile error — chain result is nullable
+msg := "Hello ${user?.name ?? "guest"}"   // valid — ?? resolves to string
+
+if (user != nil) {
+    msg := "Hello ${user.name}"           // valid — narrowed (§21)
+}
+```
+
+The rule applies to any expression whose static type is nullable: direct
+nullable bindings, functions returning `T?`, optional chains, and try-parse
+results. Values narrowed to non-nullable inside a narrowing `if` block are not
+subject to the rule — they are already non-null at that program point.
+
+The compile error is deliberate. Grob's treatment of nullability is strict
+throughout — nil is never silently coerced, at any site. Interpolation is no
+exception. The asymmetry with `print()` — which accepts nil and renders it as
+`"nil"` (§13) — is intentional: `print()` is a diagnostic sink; interpolation
+constructs a string where silent nil coercion would produce output like
+`"Hello nil"` that almost always indicates a bug.
+
+**Single backtick strings**
+
+- Inline raw form. Intended for paths, patterns and short verbatim values
+  where escape sequences would be noisy.
+- No escape processing — content is verbatim.
+- Cannot contain a backtick character. No workaround — use a double-quoted
+  string with `\"` if a backtick is needed in the value.
+- Do not span lines — a newline before the closing backtick is a compile error.
+- Interpolation is not supported — `${expr}` inside a single backtick string
+  is a literal character sequence, not an expression.
+
+**Triple backtick strings**
+
+- Multiline verbatim block. Intended for SQL, JSON templates, multiline
+  command strings and similar structured content.
+- No escape processing — content is verbatim.
+- Newlines, tabs and spaces are preserved exactly as written. No trimming.
+- May contain single backticks freely. Cannot contain ````` (three
+  consecutive backticks) as that closes the literal.
+- Interpolation is not supported.
+- Content begins immediately after the three opening backticks. The opening
+  delimiter is typically followed by a newline, which becomes the first
+  character of the string value. To avoid the leading newline, place the
+  opening triple backtick on the same line as the first content character.
+- Triple backtick content is **verbatim** in v1 — no indentation trimming.
+  If the closing triple backtick is indented, that indentation does **not**
+  strip leading whitespace from the content above. This may be revisited
+  post-MVP (C#-style trim-to-closing-delimiter is the reference model).
+
+**Choosing between forms:**
+
+|Intent                                        |Form             |
+|----------------------------------------------|-----------------|
+|Normal string value                           |`"double-quoted"`|
+|String with interpolation                     |`"Hello ${name}"`|
+|Windows path, regex pattern, short verbatim   |`single backtick`|
+|SQL, multiline template, structured text block|`triple backtick`|
+
+Single-quoted strings (`'value'`) are not valid in Grob.
+
+**Windows paths and literal backslash content.** Single-backtick raw strings
+are the canonical Grob idiom for Windows paths, regex patterns, and any
+other string whose content contains literal backslashes. The double-quoted
+form processes escape sequences and will either reject unknown escapes at
+compile time or — worse — silently substitute a defined escape where the
+author meant a backslash followed by a letter.
+
+```grob
+path := `C:\Users\Chris\Downloads`     // clean — no escaping needed
+path := "C:\\Users\\Chris\\Downloads"  // works but awkward
+path := "C:\Users\Chris\Downloads"     // compile error: \U is not a defined escape
+path := "C:\temp\log.txt"              // DANGER: \t silently becomes a tab character
+```
+
+The last case is the dangerous one. `\t` is a defined escape in Grob, so
+the compiler accepts the string without complaint — but the resulting
+value contains a literal tab where the author wanted the path segment
+`\temp`. Subsequent `fs.*` operations fail with a puzzling "directory not
+found" error. The backtick form sidesteps the entire category: every
+character between backticks is verbatim.
+
+The convention applies equally to regex patterns:
+
+```grob
+pattern := `^\d{4}-\d{2}-\d{2}$`       // clean
+pattern := "^\\d{4}-\\d{2}-\\d{2}$"    // valid but noisy — every \d is now \\d
+```
+
+The rule: if a string is literal content that happens to contain
+backslashes, use single backticks. Reach for double quotes only when
+interpolation is needed or the string is an ordinary human message.
+
+### Bool literals
+
+```grob
+true
+false
+```
+
+### Nil literal
+
+```grob
+nil
+```
+
+### Array literals
+
+```grob
+[1, 2, 3]               // int array, inferred
+["alpha", "beta"]       // string array, inferred
+[]                      // empty array — valid where type is known from context
+```
+
+`[]` requires the type to be known from context — an annotated left-hand side,
+a parameter type, or a return type. `[]` in a position where the element type
+cannot be inferred is a compile error.
+
+```grob
+items: int[] := []      // valid — type known from annotation
+fn foo(): string[] {
+    return []           // valid — type known from return type
+}
+items := []             // compile error — element type cannot be inferred
+```
+
+-----
+
+## 9. Type Annotations
+
+```grob
+x := 42                  // inferred — x is int
+x: int := 42             // explicit annotation — always valid, never required here
+
+const MAX := 100         // inferred, compile-time constant
+const MAX: int := 100    // explicit, compile-time constant
+
+readonly TOKEN := env.require("ADO_PAT")        // inferred, runtime-once
+readonly CUTOFF: date := date.today().minusDays(30)
+
+name: string? := nil     // annotation required — nil provides no type information
+items: int[] := []       // annotation required — [] provides no element type
+```
+
+**Rules:**
+
+- Explicit type annotation syntax: `name: Type := value`.
+- Annotation is **optional** on local variables where inference can resolve the type.
+- Annotation is **required** where inference cannot:
+  - Declaration initialised with `nil` — `name: string? := nil`.
+  - Declaration initialised with `[]` — `items: int[] := []`.
+- Function parameters are **always explicitly typed** — no inference on parameters.
+- Return type annotation on functions: `fn foo(): int { }` — colon before the
+  return type, consistent with parameter syntax.
+- **v1 rule:** explicit return types are required on all functions. Inference on
+  return types is post-MVP. This eliminates a class of inference ambiguity and
+  keeps the type checker simple.
+
+-----
+
+## 10. Type Declarations and Construction
+
+### Declaration
+
+```grob
+type Repo {
+    name:    string
+    ssh_url: string
+}
+
+type Config {
+    host:    string
+    port:    int = 8080       // field default
+    timeout: int = 30         // field default
+}
+```
+
+- `type` keyword followed by the type name and a brace-delimited field list.
+- Fields without defaults are **required** at construction.
+- Fields with defaults are **optional** at construction — the default is used if omitted.
+
+### Construction
+
+```grob
+r := Repo {
+    name:    "grob",
+    ssh_url: "git@github.com/..."
+}
+
+c := Config {
+    host: "localhost"          // port and timeout use defaults
+}
+```
+
+- Fields at construction are **named and unordered** — order need not match the
+  declaration. Matches C# object initialiser behaviour.
+- All field names must match the declared type. Unknown field names are a compile error.
+- Omitting a field without a default is a compile error.
+
+### Nested construction
+
+```grob
+type Address {
+    city:    string
+    country: string
+}
+
+type Person {
+    name:    string
+    address: Address
+}
+
+p := Person {
+    name:    "Chris",
+    address: Address { city: "London", country: "UK" }
+}
+```
+
+`TypeName { }` is an expression that produces a value of that type. It can appear
+anywhere that type is expected — nested construction requires no special case.
+
+### Field default evaluation
+
+Field default expressions evaluate at **construction time**, in the scope of the
+construction site.
+
+```grob
+type Config {
+    host:    string
+    port:    int    = 8080                // literal default
+    retries: int    = computeDefault()    // function call
+    created: date   = date.now()          // stdlib call
+    suffix:  string = "-${env.get("TAG") ?? "dev"}" // runtime expression
+}
+```
+
+Rules:
+
+- A default expression may be **any expression that is legal in a general
+  expression position** — literals, function calls, interpolated strings,
+  stdlib calls, method chains, anonymous struct literals, nested named type
+  construction. There is no compile-time-constant restriction on defaults.
+- A default expression may reference any identifier in scope at the
+  **construction site** — `const` and `readonly` bindings, mutable variables,
+  function names, imported modules. It may **not** reference other fields of
+  the type being constructed; during construction, sibling fields may not yet
+  have been assigned, and the reference is a compile error.
+- When a construction supplies every field explicitly, no default expression
+  evaluates. Defaults have no side effects for fields that are not omitted.
+- When a construction omits a field, the field's default expression evaluates
+  once for that construction. Side effects (function calls, stdlib reads,
+  date capture) fire on every construction that omits the field.
+- A default is not a compile-time constant. Even when the right-hand side is a
+  literal, it is still a runtime expression in the specification. The compiler
+  may inline a literal default as an optimisation, but this is an
+  implementation detail, not a language rule.
+- The `const` / `readonly` modifiers do not appear at the field-default
+  declaration site. A field default is part of the type declaration, not a
+  separate binding.
+
+```grob
+type Entry {
+    id:        guid   = guid.new()      // fresh GUID per construction
+    timestamp: date   = date.now()      // fresh timestamp per construction
+    label:     string = "unknown"       // literal default
+}
+
+e1 := Entry { label: "first"  }          // id and timestamp evaluate now
+e2 := Entry { label: "second" }          // id and timestamp evaluate again
+e3 := Entry {                            // label evaluates too
+    id:        guid.parse("..."),
+    timestamp: date.today(),
+    label:     "third"
+}                                        // no defaults evaluate
+```
+
+**Interaction with `readonly` bindings.** A `readonly` binding of a type with
+defaults is unchanged: defaults evaluate at construction time and produce the
+value the binding holds. Deep immutability (§24, D-291) prevents subsequent
+mutation, but does not affect default evaluation.
+
+```grob
+readonly CFG := Config { host: "example.com" }
+// port, retries, created and suffix defaults evaluate at this line.
+// CFG is then frozen — its fields cannot be reassigned or mutated.
+```
+
+**Interaction with field-default exceptions.** If a default expression throws
+at construction time, the exception propagates from the construction site as
+if the caller had written the expression inline. Standard exception handling
+applies (§27).
+
+### The bare brace rule
+
+`{ }` is **always a block**. Using bare braces as an object literal is a compile
+error:
+
+```
+error: '{' begins a block, not a struct literal.
+       Use '#{ field: value }' for an anonymous struct, or declare a named type.
+```
+
+|Syntax                     |Meaning                 |
+|---------------------------|------------------------|
+|`{ }`                      |Block — always          |
+|`#{ field: value }`        |Anonymous struct literal|
+|`TypeName { field: value }`|Named type construction |
+
+Partial construction and `with`-style record mutation are deferred post-MVP.
+
+-----
+
+## 11. Comments
+
+```grob
+// Single-line comment
+
+/* Block comment
+   spans multiple lines */
+
+/// Doc comment — reserved, no semantics in v1
+```
+
+- `//` — single-line. Everything from `//` to end of line is ignored.
+- `/* */` — block comment. Does not nest.
+- `///` — the lexer recognises this token and discards it. No semantics attached
+  in v1. Reserved so that `///` usage in scripts does not break when `grob doc`
+  tooling arrives post-MVP.
+
+-----
+
+## 12. Expressions vs Statements
+
+### Statements
+
+These constructs are statements — they execute but do not produce a value:
+
+- Variable declaration: `:=`
+- Reassignment: `=`
+- Compound assignment: `+=`, `-=`, `*=`, `/=`, `%=`
+- Increment / decrement: `i++`, `i--`
+- `if/else`
+- `while`
+- `select/case`
+- `for...in`
+- `try/catch`
+- `break`, `continue`
+- `return`
+
+Assignment is **not** an expression. `if (x := foo())` is a compile error. This
+eliminates a class of bugs common in C-family languages.
+
+### Expressions
+
+These constructs are expressions — they produce a value:
+
+- Literals: `42`, `"hello"`, `true`, `nil`, `[1, 2, 3]`
+- Identifiers: `x`, `name`
+- Arithmetic, comparison, logical operations
+- Function calls — produce the return value. May be used as a statement (value discarded).
+- Ternary `? :` — two-way value selection
+- Switch expression (`value switch { }`) — multi-branch value selection
+- Anonymous struct literal `#{ }`
+- Named type construction `TypeName { }`
+- Method calls: `str.upper()`
+- Member access: `file.name`
+
+### `print()` and `void`
+
+`print()` is a built-in function returning `void`. It is used as a statement.
+Its return value cannot be assigned or used in expression position.
+`void` is not a first-class type in Grob — it exists only as the return type of
+functions that produce no value.
+
+### Block-body lambdas
+
+Lambdas with a block body (`x => { ... }`) produce a value in one of two ways:
+
+- **Implicit.** If the block's final statement is an expression (literal,
+  identifier, arithmetic, call, ternary, switch expression, struct construction,
+  method call, member access), that expression's value is the lambda's return
+  value and its type is the lambda's inferred return type.
+- **Explicit early return.** `return <expr>` inside the block exits the lambda
+  immediately with the given value. `return` in a lambda returns from the
+  lambda — it never returns from the enclosing function.
+
+The two mechanisms may coexist. The type checker requires all return paths
+(the implicit final expression and every explicit `return`) to produce the
+same type.
+
+```grob
+// Implicit last expression
+.map(line => {
+    parts := line.split("|")
+    BranchInfo { branch: parts[0], date: parts[1], author: parts[2] }
+})
+
+// Implicit with early return
+.map(r => {
+    if (r.status == "deleted") {
+        return EmptyRecord { }
+    }
+    FullRecord { id: r.id, name: r.name, size: r.size }
+})
+```
+
+If the block's final statement is not an expression — a declaration,
+assignment, increment, `if`, `while`, `for`, `select`, `try`, `break`,
+`continue`, or `throw` — the lambda's inferred return type is `void`. A void
+lambda cannot be used in a position that requires a value.
+
+`return` without an expression is valid only if the lambda is typed as `void`.
+
+Lambda return types are always inferred from the body. There is no syntax to
+declare a lambda's return type in v1.
+
+-----
+
+## 12.1 Closure Semantics and Variable Resolution
+
+A lambda is a function value. Its body may reference identifiers from any
+scope that is visible at the lambda's definition site. How each reference is
+resolved at runtime depends on the category of the referenced binding.
+
+Four categories need to be distinguished:
+
+### 1. Top-level `const`
+
+Resolved at compile time. `const` identifiers have no runtime slot. Every
+reference — whether from top-level code, from a function body, or from a
+lambda body — is replaced by the compiler with a direct load from the
+constant pool.
+
+```grob
+const MAX := 100
+
+readonly isLarge := (n: int) => n > MAX    // 'MAX' inlines as 100
+```
+
+### 2. Top-level `readonly`
+
+Resolved at runtime via the globals table. The value never changes after
+its declaration has executed, so every read yields the same value, but
+mechanically the lambda emits a global-read opcode, not an upvalue load.
+
+```grob
+readonly THRESHOLD := readConfig().threshold
+
+check := (n: int) => n > THRESHOLD         // reads THRESHOLD via globals
+```
+
+### 3. Top-level mutable
+
+Resolved at runtime via the globals table. The value may change between
+lambda invocations; each invocation reads the current value, and writes
+from the lambda body update the global binding.
+
+```grob
+counter := 0
+
+increment := () => { counter = counter + 1 }
+current   := ()  => counter
+
+print(current())    // 0
+increment()
+increment()
+print(current())    // 2
+```
+
+Both `increment` and `current` see the same `counter` binding. There is no
+capture; each reference is a direct read from or write to the globals table.
+
+### 4. Locals in enclosing function scopes
+
+Captured as **upvalues** per the standard closure mechanism. A lambda
+defined inside a function body that references a local from the enclosing
+function extends that local's lifetime beyond the enclosing function's
+return.
+
+```grob
+fn makeCounter(): fn(): int {
+    count := 0                     // local to makeCounter
+    return () => {
+        count = count + 1          // captured as upvalue
+        count
+    }
+}
+
+c1 := makeCounter()
+c1()    // 1
+c1()    // 2
+c2 := makeCounter()                // independent counter
+c2()    // 1
+```
+
+Each call to `makeCounter` produces a lambda with its own captured `count`.
+The two counters do not share state.
+
+### The term "capture"
+
+In this specification, "capture" applies only to category 4 — locals from
+enclosing function scopes. A lambda does not "capture" top-level bindings;
+it **references** them through the globals table (categories 2 and 3) or
+inlines them at compile time (category 1).
+
+The distinction matters when reasoning about lambda lifetime and mutation:
+
+- A lambda that captures a local keeps that local alive for as long as the
+  lambda is reachable.
+- A lambda that references a top-level binding does not affect the
+  binding's lifetime — top-level bindings live for the entire script run.
+
+### Mixed references
+
+A single lambda body may reference bindings from all four categories. No
+special syntax is required; the compiler classifies each identifier by the
+scope in which it was declared.
+
+```grob
+const SEP := ", "
+readonly PREFIX := env.get("PREFIX") ?? "item"
+log_count := 0
+
+fn processItems(items: string[]): string {
+    buffer := ""                   // local to processItems
+
+    items.forEach(item => {
+        buffer = buffer + PREFIX + "[" + item + "]" + SEP
+        //               ^^^^^^                      ^^^
+        //               global read                 inlined const
+        //
+        //       buffer: captured upvalue from processItems
+        log_count = log_count + 1  // global write to top-level mutable
+    })
+
+    return buffer
+}
+```
+
+### Interaction with `finally` and early exit
+
+A `return`, `break` or `continue` inside a block-body lambda affects only
+the lambda, regardless of where the lambda is defined (§27, D-275). A
+top-level lambda has the same semantics as a lambda inside a function
+body — `return` exits the lambda, never the enclosing top-level script.
+`break` and `continue` are only meaningful inside a loop in the lambda's
+own body; they cannot cross the lambda boundary into an outer loop.
+
+### Scoping around top-level initialisation
+
+During top-level initialisation (§19.1), a lambda assigned to a top-level
+`readonly` or mutable binding is a value — the lambda's body does not yet
+execute. Later calls to the lambda resolve top-level global references at
+call time, using whatever value the binding holds at that moment. If a
+lambda is called from a top-level initialiser and its body reads a
+not-yet-initialised top-level binding, the circular-initialisation
+diagnostic (§19.1) fires at that read.
+
+-----
+
+## 13. `print()` Built-in
+
+```grob
+print("Hello, world")       // single value
+print(42)                   // any type
+print(a, b, c)              // variadic — values separated by single space
+print()                     // no args — prints empty line
+```
+
+**Specification:**
+
+- Accepts any type. Value types (`int`, `float`, `bool`) are converted to their
+  string representations. Reference types call `.toString()`. `nil` prints as
+  the string `"nil"`.
+- Variadic — any number of arguments. Multiple values separated by a single space.
+- A newline is appended after the last value.
+- Output goes to **stdout**.
+- Returns `void` — used as a statement only.
+- There is no `printError()`. `log.error()` is the stderr output mechanism.
+  The `print()` / `log.*` boundary: results go to stdout via `print()`,
+  operational messages go to stderr via `log.*`. These do not overlap.
+
+**Nullable values.** `print()` accepts nullable types directly. Nil values
+render as the string `"nil"`. This differs from string interpolation (§8),
+which requires nil to be resolved explicitly before reaching the interpolation
+slot. `print()` is a diagnostic output sink; interpolation is string
+construction. The two sites have different rules because the intent behind
+them differs.
+
+-----
+
+## 14. Line Continuation
+
+Newlines are significant in Grob — they end statements. A newline is **suppressed**
+(the statement continues on the next line) in two cases:
+
+**Case 1 — Trailing token:** The current line ends with any of:
+
+|Token type                 |Examples                                                          |
+|---------------------------|------------------------------------------------------------------|
+|Binary operators           |`+`, `-`, `*`, `/`, `%`, `==`, `!=`, `<`, `>`, `<=`, `>=`, `&&`, `|
+|Assignment operators       |`=`, `:=`, `+=`, `-=`, `*=`, `/=`, `%=`                           |
+|Comma                      |`,`                                                               |
+|Open bracket or parenthesis|`(`, `[`, `{`                                                     |
+|Member access dot          |`.`                                                               |
+|Lambda arrow               |`=>`                                                              |
+
+**Case 2 — Leading dot:** The *next* line begins with `.`. The lexer peeks one
+token across the newline to detect this.
+
+Leading-dot style is the **recommended form** for multi-line method chains:
+
+```grob
+// Recommended — leading dot
+result := files
+    .filter(f => f.extension == ".log")
+    .map(f => f.name)
+    .sort()
+
+// Also valid — trailing dot
+result := files.
+    filter(f => f.extension == ".log").
+    map(f => f.name).
+    sort()
+
+// Multi-line expression — trailing operator
+total := price
+    + tax
+    + shipping
+
+// Multi-line function call — trailing comma
+result := someFunction(
+    arg1,
+    arg2
+)
+
+// Multi-line array literal
+items := [
+    "alpha",
+    "beta",
+    "gamma"
+]
+```
+
+Both cases are implemented entirely in the lexer. The parser receives a clean
+token stream with newlines already resolved. No explicit continuation character.
+No semicolons.
+
+-----
+
+## 15. Numeric Types
+
+|Type   |Representation        |Range                                      |
+|-------|----------------------|-------------------------------------------|
+|`int`  |64-bit signed integer |−9,223,372,036,854,775,808 to 9,223,372,036,854,775,807|
+|`float`|64-bit IEEE 754 double|±5.0 × 10⁻³²⁴ to ±1.7 × 10³⁰⁸             |
+
+**Integer overflow:** Arithmetic that exceeds the `int` range throws `ArithmeticError`
+at runtime. The VM uses checked arithmetic — overflow never silently wraps. This
+prevents a class of bugs where large file sizes, timestamps, or counters silently
+produce wrong results.
+
+**Float precision:** `float` is a 64-bit IEEE 754 double-precision value.
+Floating point arithmetic follows IEEE 754 rules, with one deliberate
+divergence: division by zero and modulo by zero throw `ArithmeticError` rather
+than producing `±Infinity` or `NaN`. The same rule applies to `int` division
+and modulo by zero. Non-finite values (`NaN`, `±Infinity`) can still enter
+the arithmetic pipeline through `math` functions (e.g. `math.sqrt(-1.0)`) and
+propagate per IEEE 754, but they are never produced by division or modulo
+operators.
+
+**Implicit promotion:** `int op float` promotes the `int` to `float` before the
+operation. The result is `float`. No other implicit type conversions exist in Grob.
+
+**No implicit coercion:** `bool` → `int` is not supported. `int` → `string` is not
+supported — use `.toString()` or string interpolation. `string` → `int` is not
+supported — use `.toInt()`. The only implicit conversion in the language is
+`int` → `float` in mixed arithmetic.
+
+-----
+
+## 16. Trailing Commas
+
+Trailing commas are permitted in all comma-separated lists:
+
+```grob
+items := [1, 2, 3,]                 // array literal
+r := Repo { name: "grob", url: "...", }  // struct construction
+m := map<string, string>{
+    "key": "value",
+}                                    // map literal
+fn foo(a: int, b: int,): int { }    // function parameters
+foo(1, 2,)                           // function arguments
+```
+
+Trailing commas are optional — never required. They are permitted to simplify
+code generation, reduce diff noise on version control, and align with modern
+language conventions. `grob fmt` normalises trailing comma usage.
+
+-----
+
+## 17. Forward References
+
+Functions and types can reference other functions and types declared later in the
+same file. The type checker performs two passes:
+
+1. **Registration pass** — walks all top-level declarations (`fn`, `type`, `param`,
+   `import`) and registers their names and signatures in the symbol table.
+2. **Validation pass** — walks all function bodies and top-level code, resolving
+   references against the fully populated symbol table.
+
+This means declaration order does not matter at the top level. A function can call
+a function declared below it, and a type can reference a type declared below it.
+
+**Supported forward-reference forms.** The two-pass model admits all of the
+following at the top level:
+
+- Function-to-function forward reference.
+- Type-to-type forward reference (subject to cycle rules — see §17.1).
+- Function signature referencing a type declared later — parameter type or
+  return type.
+- Generic type argument referencing a type declared later. A call like
+  `csv.read(path).mapAs<User>()` resolves when `type User` is declared below
+  the call site.
+- Self-reference — direct recursion, a function calling itself.
+- Mutual reference — indirect recursion, functions calling each other or
+  types referencing each other via nullable fields.
+
+Inside function bodies, the standard rule applies: `:=`, `const` and `readonly`
+declare in the current scope, and the name must be declared before use within
+that scope. Forward references within a single function body are not supported.
+
+-----
+
+## 17.1 Type Cycles
+
+A type declaration cannot contain a cycle of required non-nullable fields that
+would produce an infinitely-sized value. The type checker detects cycles during
+the validation pass and reports a compile error.
+
+**What participates in the cycle walk:** required fields whose type is a named
+user-defined type (including self).
+
+**What terminates a cycle (does not participate):**
+
+- Nullable fields (`T?`) — `nil` terminates the chain.
+- Array fields (`T[]`) — an empty array terminates the chain.
+- Map fields (`map<K, V>`) — an empty map terminates the chain.
+
+**Detection.** Standard depth-first walk with `Unvisited` / `Visiting` /
+`Visited` states per type. A back-edge to a type currently on the DFS stack is
+a cycle. The full path is reported in the diagnostic.
+
+**Error message format:**
+
+```
+error[E—cycle]: type cycle with no terminating field
+
+  type A {
+    b: B
+       ^ — required field of type B
+  }
+  type B {
+    a: A
+       ^ — required field of type A, completing the cycle A → B → A
+
+  A value of type A would require a value of type B, which would
+  require another value of type A, and so on without end.
+
+  To break the cycle, make one of the fields optional:
+      b: B?        // nil terminates the chain
+  Or use a collection type, which can be empty:
+      b: B[]       // empty array terminates the chain
+```
+
+The error code `E—cycle` is a placeholder; a full error-code scheme is deferred
+to its own session.
+
+Multi-type cycle diagnostics (`A → B → C → A`) follow the same format with each
+participating field shown in declaration order and the back-edge highlighted.
+
+Legitimate recursive patterns are preserved by the termination rules:
+
+```grob
+type Tree {
+    value:    int
+    children: Tree[]     // array — empty terminates the chain
+}
+
+type Node {
+    value: int
+    next:  Node?         // nullable — nil terminates the chain
+}
+```
+
+-----
+
+## 18. Shadowing
+
+A local variable may shadow a variable from an enclosing scope, including function
+parameters and global variables. The compiler emits a **warning** (not an error)
+when shadowing is detected.
+
+```grob
+name := "outer"
+if (condition) {
+    name := "inner"   // warning: 'name' shadows variable declared at line 1
+    print(name)       // "inner"
+}
+print(name)           // "outer"
+```
+
+Rationale: preventing shadowing entirely is annoying in real scripts where short
+variable names (`i`, `name`, `result`) are naturally reused. Allowing it silently
+is a bug factory. A warning is the right balance — it signals the intent without
+blocking valid code.
+
+-----
+
+## 19. Script Structure and Declaration Order
+
+A Grob script has the following canonical structure:
+
+```grob
+import Grob.Http                    // 1. Imports (if any)
+import Grob.Crypto
+
+@secure                             // 2. Params (if any)
+param token: string
+param days: int = 30
+
+type Repo {                          // 3. Type declarations (if any)
+    name: string
+    url:  string
+}
+
+fn helper(r: Repo): string {        // 4. Function declarations (if any)
+    return r.name
+}
+
+// 5. Top-level code (script body)
+repos := loadRepos()
+print(repos.length)
+```
+
+**Order rules:**
+
+- `import` statements must appear before any other declarations or code.
+- `param` blocks must appear before `type` declarations, function declarations
+  and top-level code. `param` may appear after `import`.
+- `type` and `fn` declarations may appear in any order relative to each other
+  (forward references are resolved by the two-pass type checker).
+- Top-level code (statements, expressions) appears after all declarations.
+- Comments may appear anywhere.
+
+An `import` after a `param` or `type` is a compile error. A `param` after a
+`fn` or top-level statement is a compile error.
+
+-----
+
+## 19.1 Top-Level Initialisation Order
+
+**Execution order.** After `import`, `param`, `type` and `fn` declarations
+have been processed by the two-pass type checker, top-level code executes
+top-to-bottom in source order. This applies uniformly to every top-level
+statement — mutable `:=` declarations, `readonly` declarations, function calls
+used for side effects, and control-flow statements.
+
+`const` declarations do not participate in top-level execution. The type
+checker resolves every `const` at compile time and the compiler inlines each
+reference as a direct constant load; there is no runtime initialisation step
+for `const` bindings.
+
+### Circular initialisation
+
+Top-level code can read any top-level binding. A function declared at the top
+level can read top-level bindings from its body regardless of where the
+bindings are declared relative to the function. This is a natural consequence
+of the two-pass type checker (§17) — all top-level names are in scope from
+inside any function body.
+
+At runtime, a binding has a value only once its declaration statement has
+executed. Reading a `readonly` or mutable top-level binding from a function
+called during initialisation, before that binding's declaration has run, is
+a **runtime error**.
+
+```grob
+readonly A := computeA()
+readonly B := computeB()
+
+fn computeA(): int { return B + 1 }    // reads B
+fn computeB(): int { return A + 1 }    // reads A
+```
+
+When `A`'s declaration runs, `computeA()` is called, which reads `B`. `B`'s
+declaration has not yet executed, so `B` has no value. The runtime detects
+this and halts with a diagnostic.
+
+**Detection.** Each top-level binding slot carries a three-state tag —
+`Uninitialised`, `Initialising`, `Initialised`. The declaration statement
+transitions the slot from `Uninitialised` to `Initialising` before evaluating
+the right-hand side, and from `Initialising` to `Initialised` after. Every
+read of a top-level binding during startup checks the tag. A read of a slot
+in `Uninitialised` or `Initialising` state halts with the circular-
+initialisation diagnostic.
+
+The check applies only during top-level execution. After the final top-level
+statement completes, every top-level binding is in `Initialised` state and
+subsequent reads from function bodies (invoked from top-level code that has
+already finished, or from later function calls) skip the tag check. The cost
+is a single branch per top-level binding read during startup and zero
+afterwards.
+
+**Applies to both `readonly` and mutable top-level bindings.** The rule is
+the same for both. A mutable top-level binding whose initialiser calls a
+function that reads a later-declared top-level binding produces the same
+diagnostic.
+
+**Error message format:**
+
+```
+error: circular initialisation detected.
+
+  While initialising top-level binding 'A' at line 1,
+  the function 'computeA' (line 4) read top-level binding 'B'
+  at line 2, which has not yet been initialised.
+
+      readonly A := computeA()
+                    ^ — initialising 'A' here
+
+      readonly B := computeB()
+                    ^ — 'B' not yet initialised
+
+      fn computeA(): int {
+          return B + 1   // 'B' read while still uninitialised
+                 ^
+      }
+
+  Top-level bindings are initialised in source order. Reading a
+  top-level binding before its declaration has executed is an error.
+
+  To fix: reorder the declarations so 'B' appears before 'A',
+  or move the computation inside a function that runs after
+  top-level initialisation completes.
+```
+
+This is a runtime error, reported through the exception machinery (§27). The
+exception type is `RuntimeError`; the script halts. No user-level `try`/`catch`
+can recover — the script cannot complete startup.
+
+**Why runtime, not compile-time.** Detecting the cycle at compile time would
+require inter-procedural analysis — tracing which functions a top-level
+initialiser transitively calls and which top-level bindings those functions
+read. The type checker does not otherwise perform inter-procedural analysis,
+and adding it for this one case would be disproportionate. The runtime check
+is cheap, produces a precise diagnostic, and preserves the simpler type
+checker design.
+
+-----
+
+## 20. Equality Semantics
+
+**Primitives:** `==` on `int`, `float`, `bool`, `string`, `guid` compares by
+value. `42 == 42` is `true`. `"hello" == "hello"` is `true`.
+
+**User-defined types (named structs):** `==` performs field-by-field value
+equality. Two struct values are equal if they are the same type and all fields
+are equal (recursively). This matches the behaviour a scripting language user
+expects — two `Repo` values with the same fields are the same repo.
+
+**Anonymous structs (`#{ }`):** `==` performs field-by-field value equality.
+Two anonymous structs are equal if they have the same field names and all field
+values are equal. Field order does not matter.
+
+**Arrays:** `==` performs element-wise comparison. `[1, 2, 3] == [1, 2, 3]` is
+`true`. Arrays of different lengths are never equal. Element comparison is
+recursive — arrays of structs compare field-by-field per element.
+
+**Maps:** `==` performs entry-wise comparison. Two maps are equal if they have
+the same keys and all corresponding values are equal. Insertion order does not
+affect equality.
+
+**Nil:** `nil == nil` is `true`. `x == nil` where `x` is non-nil is `false`.
+
+**Type mismatch:** `==` between incompatible types (e.g. `int == string`) is a
+compile error, not a runtime `false`.
+
+-----
+
+## 21. Optional Chaining and Nil Propagation
+
+`?.` short-circuits the entire chain when the receiver is `nil`.
+
+```grob
+name := user?.address?.city    // nil if user is nil OR address is nil
+```
+
+When any step in the chain evaluates to `nil`, the entire chain immediately
+evaluates to `nil` — no further member access or method calls are attempted.
+The result type of the chain is always nullable (`T?`).
+
+`?.` may appear multiple times in a single chain. Each `?.` is an independent
+nil check. The chain short-circuits at the first `nil` encountered.
+
+-----
+
+## 22. Script-Level `return`
+
+`return` is only valid inside a function body. Using `return` at the top level
+of a script (outside any function) is a compile error:
+
+```
+error: 'return' is not valid at script level.
+       Use 'exit()' to terminate a script early.
+```
+
+-----
+
+## 23. Explicit Non-Features
+
+The following are explicitly not part of the Grob language:
+
+- **Multiple return values** — functions return a single value. Use a struct to
+  return multiple values: `fn foo(): Result { }`.
+- **Tuples** — not in v1. Structs serve the same purpose with named fields. Tuples
+  are an additive grammar extension post-MVP if friction is observed.
+- **Out parameters** — not in v1, not planned. The nullable return pattern covers
+  the try-parse use case: `"42".toInt() → int?` with `??` for defaults.
+- **Operator overloading** — user-defined types cannot define custom `+`, `==`,
+  or other operators. Comparison uses field-by-field equality (§20).
+- **Circular imports** — `import` is for plugins only. Grob scripts do not export
+  types to other scripts in v1. One script cannot import another script.
+- **Implicit type coercion** — no `bool` → `int`, no `int` → `string`, no
+  `string` → `int`. The only implicit conversion is `int` → `float` in mixed
+  arithmetic (§15).
+
+-----
+
+## 24. `const` and `readonly` Semantics
+
+Grob has two keywords for bindings that are assigned once and never change. They
+differ in **when** the right-hand side is evaluated.
+
+### `const` — compile-time constant
+
+`const` declares a compile-time constant. The right-hand side must be a
+compile-time constant expression (defined below). The type checker evaluates it
+at compile time; the compiler stores the result in the constant pool and inlines
+every reference to the identifier as a direct constant load.
+
+```grob
+const MAX_RETRIES := 3
+const TAX_RATE    := 0.2
+const APP_NAME    := "grob"
+const TAU         := math.pi * 2          // stdlib constants allowed
+const GREETING    := "Hello, " + APP_NAME // concatenation of const strings
+```
+
+Allowed on the right-hand side of a `const` declaration:
+
+- **Literals** of `int`, `float`, `string`, `bool`, `nil`. All literal forms from
+  §8 are admitted — decimal, hex, binary and underscore-separated integers;
+  floats; raw backtick strings; double-quoted strings **without** `${...}`
+  interpolation; `true`, `false`, `nil`.
+- **Binary arithmetic, comparison and logical operators** applied to
+  compile-time constant operands: `+`, `-`, `*`, `/`, `%`, `==`, `!=`, `<`,
+  `<=`, `>`, `>=`, `&&`, `||`.
+- **Unary operators** on compile-time constant operands: `-`, `!`.
+- **String concatenation** via `+` on two compile-time constant strings (a
+  consequence of the arithmetic rule; named explicitly because users will ask).
+- **References to other `const`-bound identifiers** declared earlier in the
+  file.
+- **References to named stdlib constants** from the whitelist below.
+
+Not allowed on the right-hand side of a `const` declaration:
+
+- Function calls of any kind, including stdlib calls such as `math.min(1, 2)`.
+  Even calls that could in principle be evaluated at compile time are rejected;
+  the rule is mechanical, not based on purity analysis.
+- Struct construction, array literals, map literals, anonymous struct literals.
+- Any call into `env.*`, `date.*`, `fs.*`, `process.*`, `http.*`, or any plugin.
+- Interpolated strings — a string containing any `${...}` is not a compile-time
+  constant, even when every interpolated expression is itself `const`. Use `+`
+  to compose: `const G := "Hi " + NAME`.
+- Lambdas, optional chaining (`?.`), nil coalescing (`??`), ternary (`? :`).
+- References to `readonly` or mutable identifiers.
+
+**Stdlib constant whitelist (v1):**
+
+|Namespace|Constants|
+|---------|---------|
+|`math`   |`math.pi`, `math.e`, `math.tau`|
+|`path`   |`path.separator`, `path.altSeparator`, `path.pathSeparator`, `path.lineEnding`|
+|`guid`   |`guid.empty`, `guid.namespaces.dns`, `guid.namespaces.url`, `guid.namespaces.oid`, `guid.namespaces.x500`|
+
+A stdlib symbol qualifies for this list if and only if it is a named primitive
+value with no runtime cost to resolve. Functions never qualify.
+
+**Floating-point determinism.** Compile-time evaluation of float expressions
+uses the host .NET runtime's IEEE 754 semantics. Values are stable across
+identical .NET versions.
+
+A violation reports the offending form and suggests `readonly`:
+
+```
+error: right-hand side of 'const' is not a compile-time constant expression.
+       Found: call to 'env.require'
+       'const' requires a literal, an expression on literals, or a reference
+       to another 'const' binding. Use 'readonly' instead for runtime values.
+```
+
+### `readonly` — runtime-once binding
+
+`readonly` declares a runtime binding that is evaluated at the point of
+declaration, assigned once, and never reassigned or mutated afterwards. The
+right-hand side may be any valid Grob expression.
+
+```grob
+readonly TOKEN  := env.require("ADO_PAT")
+readonly CUTOFF := date.today().minusDays(30)
+readonly CONFIG := fs.readText("config.json")
+readonly ITEMS  := [1, 2, 3]
+```
+
+Semantics:
+
+- The right-hand side is evaluated at the point of declaration. At the top
+  level, `readonly` bindings are evaluated in source order (see §19.1). Inside
+  a function body, evaluation happens at the point of execution.
+- The binding cannot be reassigned: `TOKEN = "other"` is a compile error.
+- The value cannot be mutated. For containers and structs, any operation that
+  would mutate the bound value is a compile error — `ITEMS.append(4)`,
+  `ITEMS[0] = 99`, `CONFIG["port"] = "8080"`, `point.x = 5` (where `point` is
+  `readonly`), `++counter` on a `readonly int`, `counter += 1`.
+- The binding must be initialised at declaration. No deferred initialisation
+  syntax exists, consistent with §9 (no uninitialised variables).
+
+**`param` bindings are implicitly `readonly`.** A parameter declared in a
+`param` block has the same immutability guarantees — it cannot be reassigned
+and cannot be mutated. The `readonly` keyword is not written on `param`
+declarations; it would be redundant. An attempt to reassign a `param` produces:
+
+```
+error: cannot reassign 'param' 'token' — parameters are implicitly readonly.
+```
+
+### Cross-references between `const` and `readonly`
+
+- A `readonly` binding may reference any `const` on its right-hand side.
+  `const` values are already resolved by the time any `readonly` is evaluated.
+- A `const` binding **may not** reference a `readonly` identifier on its
+  right-hand side — the `readonly` value does not exist at compile time:
+
+```
+error: 'const' binding cannot reference runtime value 'CUTOFF'
+       (declared as 'readonly'). Either make 'CUTOFF' a 'const', or
+       make this binding 'readonly'.
+```
+
+### Scope
+
+Both `const` and `readonly` may appear at the top level of a script and inside
+any function body or nested block. Scoping rules are identical to mutable `:=`:
+a binding lives until the end of its enclosing block.
+
+```grob
+fn computeTotal(items: Item[]): float {
+    const TAX_RATE := 0.2                 // compile-time constant
+    readonly discount := lookupDiscount() // runtime-once
+
+    total := 0.0
+    for item in items {
+        total = total + item.price
+    }
+    return total * (1.0 + TAX_RATE) * discount
+}
+```
+
+Local `const` gives magic-number naming with zero runtime overhead — every
+reference is inlined by the compiler. Local `readonly` gives an immutability
+guarantee for a value computed once at a known point.
+
+### Mutable bindings are unchanged
+
+Mutable bindings declared with `:=` permit both reassignment and mutation:
+
+```grob
+items := [1, 2, 3]
+items.append(4)          // valid — mutable binding, mutable content
+items = [5, 6, 7]        // valid — mutable binding
+```
+
+The deeper question of mutable-binding-with-immutable-content (e.g. a
+non-`const`, non-`readonly` binding to a frozen array) is deferred post-MVP. In
+v1 the three-way distinction is sufficient:
+
+|Form              |Compile-time?|Rebind?|Mutate?|
+|------------------|-------------|-------|-------|
+|`const X := ...`  |yes          |no     |no     |
+|`readonly X := ...`|no          |no     |no     |
+|`X := ...`        |no           |yes    |yes    |
+
+-----
+
+## 25. Try-Parse Pattern
+
+Grob uses nullable return types for fallible conversions — not tuples, not out
+parameters, not exceptions.
+
+```grob
+// String to int — nil if not parseable
+count := "42".toInt()           // int? → 42
+bad   := "hello".toInt()        // int? → nil
+
+// With nil coalescing for defaults
+port := input("Port: ").toInt() ?? 8080
+
+// GUID parsing
+id := guid.tryParse(raw_input)  // guid? → nil if invalid
+if (id != nil) {
+    log.info("Valid GUID: ${id}")
+}
+```
+
+The pattern is consistent across all fallible conversions:
+
+|Method                     |Returns   |On failure|
+|---------------------------|----------|----------|
+|`string.toInt()`           |`int?`    |`nil`     |
+|`string.toFloat()`         |`float?`  |`nil`     |
+|`guid.tryParse(value)`     |`guid?`   |`nil`     |
+
+The strict variants throw instead of returning nil:
+
+|Method                     |Returns   |On failure    |
+|---------------------------|----------|--------------|
+|`guid.parse(value)`        |`guid`    |`ParseError`  |
+
+This two-tier pattern (nil-returning `try` variant + throwing strict variant)
+is the convention for all type-boundary operations.
+
+-----
+
+## 26. Nested Arrays
+
+Arrays of arrays are valid. `T[][]` is the type of a two-dimensional array.
+
+```grob
+matrix := [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1]
+]
+// matrix: int[][]
+// matrix[1][2] → 0
+
+// Three-dimensional
+cube: int[][][] := [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+```
+
+There is no dimension enforcement — `matrix[0].length` need not equal
+`matrix[1].length`. This is arrays-of-arrays, not a matrix type. Sufficient
+for JSON deserialisation of nested arrays and simple grid patterns.
+
+-----
+
+## 27. Exception Handling
+
+Grob uses exceptions as its runtime error model (D-082). Failing stdlib calls
+throw; user scripts can throw with the `throw` keyword; `try`/`catch` provides
+structured recovery; `finally` provides unconditional cleanup. Unhandled
+exceptions propagate to the VM top level, produce a Grob-quality diagnostic,
+and exit with code 1.
+
+The exception type hierarchy is defined by `Grob.Runtime` (D-084). In v1 all
+exception types are built-in — user-defined exception types are post-MVP
+(D-085).
+
+### The v1 exception hierarchy
+
+`GrobError` is the root. Ten typed leaves cover the distinct runtime failure
+domains. The hierarchy is flat — no intermediate abstract classes.
+
+```
+GrobError (root)
+├── IoError           file system, permissions, stream failures
+├── NetworkError      HTTP, DNS, connection, timeout at the network layer
+├── JsonError         json.parse failure, json type coercion mismatch
+├── ProcessError      process timeout expiry, non-zero exit under *OrFail variants
+├── NilError          dereferencing nil without ?. or ??
+├── ArithmeticError   int overflow, div/0, mod/0, math domain violations
+├── IndexError        array bounds, substring bounds
+├── ParseError        guid.parse failure, future int.parse / date.parse / etc.
+├── LookupError       env.require on a missing key
+└── RuntimeError      VM-level resource failures (stack overflow); residual
+```
+
+**Domain-splitting rationale.** Each leaf has a natural-language domain name
+that a script author reaches for when writing a catch clause. The bar for a
+new leaf is "does this have a natural domain name?", not "is this a
+different kind of broken?". `RuntimeError` is the residual — reserved for
+VM-level resource failures that do not fit any of the named domains.
+
+**Canonical throw sites in v1:**
+
+|Leaf              |Throw sites                                                              |
+|------------------|-------------------------------------------------------------------------|
+|`IoError`         |`fs.*` I/O failure, permissions, `fs.createDir` on existing path         |
+|`NetworkError`    |`http.*` transport failure, DNS, connection reset, `http.download` non-2xx|
+|`JsonError`       |`json.parse` on malformed input, accessor type mismatch, `mapAs<T>` shape|
+|`ProcessError`    |`process.run` timeout, `*OrFail` on non-zero exit                        |
+|`NilError`        |Dereference of `nil` without `?.` or `??`                                |
+|`ArithmeticError` |Integer overflow (§15), int div/0, int mod/0, float div/0, float mod/0, `math.sqrt(negative)`, `math.log(0)`, `math.log(negative)`|
+|`IndexError`      |Array index out of range; substring / slice bounds out of range          |
+|`ParseError`      |`guid.parse` on malformed input; future explicit parse operations        |
+|`LookupError`     |`env.require` on a missing or empty variable                             |
+|`RuntimeError`    |Call-stack depth exceeded (stack overflow); residual                     |
+
+`map<K, V>` key-not-found is **not** an `IndexError` — map lookup returns
+`V?` per the nullable design, not a throw. `int.parse()`, `float.parse()`,
+and `date.parse()` are not in v1 but are reserved to throw `ParseError`
+when added.
+
+### `try` / `catch`
+
+```grob
+try {
+    // protected block
+}
+catch (e: IoError) {
+    // handles IoError only
+}
+catch (e: NetworkError) {
+    // handles NetworkError only
+}
+catch e {
+    // catch-all — handles any GrobError not matched above
+    // e is typed as GrobError here
+}
+```
+
+**Grammar:**
+
+- `try { }` opens a protected region. At least one `catch` or a `finally`
+  must follow.
+- Typed catches use `catch (<name>: <Type>) { <block> }`. The type must be
+  `GrobError` or a subtype.
+- The catch-all uses `catch <name> { <block> }` — identifier only, no parens
+  and no colon. It is optional. If present, it must appear after all typed
+  catches.
+- `catch (e) { }` (parens with no type) is a syntax error.
+- A catch block after a catch-all is a compile error (D-083).
+- At most one catch-all per `try`.
+- Duplicate typed catches for the same type are a compile error.
+- `catch (e: GrobError) { }` is legal — it is a typed catch that happens to
+  catch everything — but the bare `catch e { }` form is stylistically
+  preferred for the catch-all.
+
+**Matching semantics.** Typed catches match polymorphically: `catch (e: T)`
+matches any thrown value whose type is `T` or a subtype of `T`. Catches are
+tried in source order; the first match wins. In v1 the hierarchy is shallow
+(a single root `GrobError` with flat leaves), so polymorphic matching has the
+same observable behaviour as exact matching in every legal program.
+Polymorphism is specified now so user-defined exceptions (post-MVP) slot in
+without grammar change.
+
+**The binding.** Inside the catch block, the binding (`e`) is in scope with
+the declared type (or `GrobError` for the catch-all). It is immutable — it
+cannot be reassigned.
+
+**Permissiveness.** The type checker does not compute the "can-throw set" of
+expressions in the try block. `catch (e: T)` is accepted even if nothing in
+the try block can actually throw `T`. This is the C# model. An "unreachable
+catch" linter warning is post-MVP.
+
+### `throw`
+
+```grob
+throw IoError { message: "File not found: ${path}" }
+throw NetworkError { message: "Timeout", statusCode: 504 }
+```
+
+`throw <expression>` — the expression must evaluate to a subtype of
+`GrobError`. Throwing any other type is a compile error. Exceptions are
+constructed using standard struct construction syntax (§10 and D-043).
+
+`throw` is a statement, not an expression (§28).
+
+### `finally`
+
+```grob
+handle := fs.open(path)
+try {
+    // work with handle — may throw
+}
+finally {
+    handle.close()
+}
+```
+
+A `finally` block runs on every exit from the try region, whether normal or
+exceptional. It is the correct tool for releasing resources — file handles,
+network connections, locks, subprocess handles — where cleanup must happen
+regardless of success or failure.
+
+**Grammar:**
+
+- `finally` is optional. If present, it appears exactly once and must be the
+  last clause of the try.
+- A try with only a finally (no catches) is legal: `try { } finally { }`.
+- A try with neither catch nor finally is a parse error.
+
+**When it runs.** The `finally` block runs on:
+
+- Normal completion of the try block.
+- An uncaught exception propagating past the try (the finally runs, then the
+  exception continues propagating).
+- A caught exception after the catch handler completes normally.
+- A caught exception after the catch handler throws (original or rethrown).
+- Early `return` from inside the try block (the finally runs before the
+  function returns).
+- Early `break` or `continue` from inside the try block (the finally runs
+  before control transfers).
+
+The `finally` block does **not** run on `exit()` (§ uncatchable exit below).
+`exit()` terminates the process unconditionally without running finally
+blocks — consistent with C# `Environment.Exit` and Java `System.exit`.
+
+**Exception inside `finally`.** If a `finally` block itself throws, the new
+exception replaces any in-flight exception from the try or catch. The
+original exception is lost. Exception chaining (Python-style `cause` /
+`__context__`) is not part of v1. Scripts that must preserve the original
+exception should wrap the cleanup work in its own try/catch:
+
+```grob
+try {
+    doWork()
+}
+finally {
+    try {
+        cleanup()
+    }
+    catch e {
+        log.warning("Cleanup failed: ${e.message}")
+    }
+}
+```
+
+**Control flow inside `finally`.** `return`, `break`, and `continue` are
+**not** permitted inside a `finally` block — compile error. The
+"finally overrides return" behaviour permitted by C#, Java, and Python is
+deliberately disallowed. It is a reliable source of surprising bugs and has
+no legitimate use case — any apparent use is better expressed by
+restructuring the code. `throw` is permitted inside `finally`.
+
+The ban applies to control flow that would exit the enclosing function or
+loop. A `return` inside a block-body lambda that itself appears inside
+`finally` exits only the lambda and is permitted — the lambda is a function
+body in its own right (§12).
+
+### Uncatchable exit
+
+`exit(n)` (D-110) throws an internal `ExitSignal` that `try`/`catch` cannot
+catch. It unwinds the entire call stack, is caught only at the VM top level,
+flushes output buffers, and terminates the process with the specified code.
+There is no way to suppress or recover from `exit()`. `finally` blocks do
+not run on the `exit()` path.
+
+-----
+
+## 28. Statement Forms
+
+The following are statements, not expressions. They do not produce a value
+and cannot appear in expression position. Using any of them inside an
+expression is a parse-time error. None of them appear in the operator
+precedence table (§7).
+
+### Declaration — `:=`
+
+```grob
+name := expression
+```
+
+Declares `name` in the current scope and assigns the value of `expression`.
+Valid only on first use of `name` in the current scope. Reusing `:=` for a
+name that already exists in the current scope is a compile error — use `=`
+instead.
+
+### Assignment — `=` and compound
+
+|Operator|Operation          |
+|--------|-------------------|
+|`=`     |Reassign           |
+|`+=`    |Add and assign     |
+|`-=`    |Subtract and assign|
+|`*=`    |Multiply and assign|
+|`/=`    |Divide and assign  |
+|`%=`    |Modulo and assign  |
+
+The left-hand side must be an assignable target — a local or global name,
+a struct field access (`obj.field`), or an array index (`arr[i]`). Other
+expressions on the left are a compile error.
+
+The name must already exist (declared earlier with `:=`, as a function
+parameter, or as a `param` block entry). Assigning to an undeclared name is
+a compile error.
+
+Compound assignment is compile-time sugar: `x += y` lowers to `x = x + y`.
+The type rules of the underlying binary operator apply.
+
+### Increment and decrement — `++`, `--`
+
+|Operator|Operation         |
+|--------|------------------|
+|`i++`   |Increment `i` by 1|
+|`i--`   |Decrement `i` by 1|
+
+- Postfix form only — prefix (`++i`, `--i`) is not valid.
+- Applies to `int` only. `float++` and `float--` are compile errors.
+- `++` and `--` on a `const` binding is a compile error.
+- The compiler lowers `i++` to `i = i + 1`.
+
+### `throw` — see §27
+
+`throw <expression>` is a statement. The expression must evaluate to a
+subtype of `GrobError`. See §27 for full semantics. `throw` is permitted
+inside a `finally` block; `return`, `break`, and `continue` are not.
+
+### Why these are statements, not expressions
+
+Grob disallows assignment-in-expression-position deliberately. `if (x = 5)`
+is a parse error, not a subtle bug. Comparison uses `==`; assignment uses
+`=`; they are never confused because they cannot occupy the same syntactic
+position. This is a divergence from C and a deliberate alignment with
+languages that prioritise script correctness over expression compactness.
+
+-----
+
+*Document updated April 2026 — Session B Part 4: three parked decisions*
+*finalised under the `const`/`readonly` keyword model. New §19.1 (D-294 —*
+*top-level initialisation order and circular-read detection via a*
+*three-state slot tag, startup-only cost); new §10 field-default*
+*evaluation subsection (D-295 — construction-time evaluation in*
+*construction-site scope, any expression permitted, no cross-field*
+*references); new §12.1 (D-296 — four-category closure variable*
+*resolution: `const` inlined, `readonly` / mutable global reads,*
+*enclosing locals captured as upvalues; "capture" reserved for the*
+*upvalue case). Pre-session reconciliation folded in Session B Part 3*
+*edits (§17 forward-reference list, new §17.1 Type Cycles) and Session B*
+*Interlude edits (§9 `readonly` example, §24 rewrite as two subsections)*
+*that had not previously landed in this document.*
+*Previous: Session C Part 2 pre-implementation review:*
+*exception hierarchy expanded from six leaves to ten (§27 — `ArithmeticError`,*
+*`IndexError`, `ParseError`, `LookupError` added as direct children of*
+*`GrobError`; `RuntimeError` narrowed to residual VM-level resource failures);*
+*§6, §15 updated to reference `ArithmeticError` on div/mod by zero and integer*
+*overflow; §25 `guid.parse()` now throws `ParseError`; §8 Windows path callout*
+*added (backtick raw strings as canonical idiom for literal-backslash content).*
+*Previous: Session B Part 2 pre-implementation review:*
+*block-body lambda semantics specified (§12 — implicit last expression with*
+*`return` for early exit, no explicit return-type annotation in v1); switch*
+*expression pattern grammar specified (§3.1 — value, relational, and catch-all*
+*patterns; `nil` as value pattern on nullable scrutinees; exhaustiveness rules;*
+*multi-value, range, and type patterns deferred post-MVP); integer division by*
+*zero clarified (§6, §15 — throws `ArithmeticError`, matches integer modulo, float*
+*division, and float modulo); nullable interpolation is a compile error (§8,*
+*§13 — `?? <fallback>` or narrowing `if` required; `print()` asymmetry*
+*preserved and made explicit); §27 clarification that `return` inside a*
+*block-body lambda nested in `finally` is permitted (exits lambda, not*
+*enclosing function).*
+*Previous: Session B Part 1 — `print`, `exit`, `input` confirmed as built-in*
+*functions (not keywords); operator precedence table reduced to 12 levels*
+*(assignment moved to §28 Statement Forms, `??` moved tighter than ternary to*
+*match C# / Kotlin / Swift / TypeScript); `float % float` specified with fmod*
+*semantics, modulo-by-zero throws; `try`/`catch`/`throw`/`finally` grammar*
+*specified (§27); Statement Forms consolidated (§28).*
+*Previous: operator precedence table*
+*expanded to 13 levels (aligned with v1 spec); scientific notation deferred to post-MVP;*
+*numeric types (int/float precision, overflow, promotion) specified; trailing commas*
+*permitted; forward references specified (two-pass type checker); shadowing allowed*
+*with warning; script structure and declaration order specified; equality semantics*
+*defined for all types; optional chaining nil propagation specified; script-level*
+*return is a compile error; explicit non-features stated (tuples, out parameters added);*
+*`const` semantics specified (binding AND content immutable); try-parse pattern*
+*documented; nested arrays (`T[][]`) specified.*
+*Previous: OQ-007 resolved: `for...in` iterable types*
+*special-cased as array, map<K, V>, and numeric range. Formal iterable protocol post-MVP.*
+*Document created April 2026 — language fundamentals design session.*
+*Authorised decisions recorded in grob-decisions-log.md.*
+*This document is the implementation reference — the decisions log is the authority.*

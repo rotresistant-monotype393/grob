@@ -1,0 +1,8 @@
+error[E0005]: return type mismatch
+  --> return-type-mismatch-string-for-int.grob:5:16
+   |
+ 5 |         return "OK"
+   |                ^^^^
+   |
+   = note: 'statusCode' declares return type int
+   = note: this expression has type string

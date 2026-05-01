@@ -1,0 +1,4 @@
+// E3001 — importing a plugin that is not known to any configured registry
+import Grob.Foo
+
+foo.greet("world")

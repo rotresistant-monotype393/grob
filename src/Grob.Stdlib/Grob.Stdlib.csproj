@@ -1,16 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Grob.Stdlib</RootNamespace>
-    <AssemblyName>Grob.Stdlib</AssemblyName>
-    <!-- Core modules as IGrobPlugin implementations.
-         FsPlugin, JsonPlugin, CsvPlugin, DatePlugin, etc.
-         Auto-registered at VM startup by Grob.Cli. -->
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Grob.Core\Grob.Core.csproj" />
-    <ProjectReference Include="..\..\src\Grob.Runtime\Grob.Runtime.csproj" />
+    <ProjectReference Include="..\Grob.Core\Grob.Core.csproj" />
+    <ProjectReference Include="..\Grob.Runtime\Grob.Runtime.csproj" />
   </ItemGroup>
 
 </Project>

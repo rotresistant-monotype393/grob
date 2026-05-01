@@ -11,7 +11,7 @@
 - [log](log.md)
 - [regex](regex.md)
 - [path](path.md)
-- [format](format.md)
+- [formatAs](formatAs.md)
 - [guid](guid.md)
 
 ---

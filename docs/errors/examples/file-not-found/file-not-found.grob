@@ -1,0 +1,4 @@
+// E5301 — reading a file that does not exist on disk
+const settings := fs.read(`C:\config\settings.json`)
+
+print(settings)

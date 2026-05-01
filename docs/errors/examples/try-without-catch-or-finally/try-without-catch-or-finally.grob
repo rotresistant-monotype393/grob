@@ -1,0 +1,8 @@
+// E2204 — `try` block with neither a `catch` clause nor a `finally`
+fn readConfig(path: string): string {
+    try {
+        return fs.read(path)
+    }
+}
+
+print(readConfig(`C:\config.json`))

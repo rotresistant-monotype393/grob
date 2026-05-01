@@ -1,0 +1,8 @@
+error[E1002]: undefined member
+  --> undefined-member-access.grob:9:7
+   |
+ 9 | print(cfg.timeout)
+   |       ^^^^^^^^^^^
+   |
+   = note: type Config has no field or method 'timeout'
+   = note: Config declares: host, port

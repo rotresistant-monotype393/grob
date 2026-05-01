@@ -1,0 +1,5 @@
+// E2201 — import statement placed after a top-level declaration
+// Eventual path: docs/errors/examples/import-after-declaration/import-after-declaration.grob
+version := "1.0"
+
+import Grob.Http

@@ -1,48 +1,92 @@
 # Writing Plugins
 
-## The Plugin Interface
+## Minimal Example
 
 ```csharp
-public interface IGrobPlugin
-{
-    string Name { get; }
-    void Register(GrobVM vm);
-}
-```
+using Grob.Runtime;
 
-Reference the `Grob.Runtime` NuGet package. Implement `IGrobPlugin`. Register
-native functions with type signatures.
-
-```csharp
-public class MyPlugin : IGrobPlugin
+public class HelloPlugin : IGrobPlugin
 {
-    public string Name => "MyCompany.MyPlugin";
+    public string Name => "AcmeCorp.Hello";
 
     public void Register(GrobVM vm)
     {
-        vm.RegisterNative("myplugin.hello",
+        vm.RegisterNative(
+            name: "hello.greet",
             signature: new FunctionSignature(
                 parameters: [new Parameter("name", GrobType.String)],
                 returnType: GrobType.String
             ),
             implementation: args => {
-                return new StringValue($"Hello {args[0].AsString()}!");
+                var name = args[0].AsString();
+                return new StringValue($"Hello, {name}!");
             }
         );
     }
 }
 ```
 
+Build as a class library targeting the same .NET version as the Grob runtime.
+Reference the `Grob.Runtime` NuGet package for interfaces and types.
+
+## During Development
+
+```
+grob run script.grob --dev-plugin C:\dev\bin\Debug\MyPlugin.dll
+```
+
+`--dev-plugin` is a development tool only. Published plugins are loaded via
+`import` after `grob install`.
+
+## Conventions
+
+**Namespace your functions** — prefix all names with your plugin's alias:
+`xml.parse()`, `pnp.getSite()`.
+
+**Register type signatures** — always provide a `FunctionSignature`. This gives
+scripts compile-time type safety.
+
+**Fail with `GrobRuntimeException`** — do not let raw C# exceptions surface.
+
+**Document your functions** — README with signatures, descriptions and examples.
+
+## Naming
+
+| Name | Valid |
+|------|-------|
+| `Grob.Xml` | Yes — first-party style |
+| `AcmeCorp.Xml` | Yes — community style |
+| `MyXmlPlugin` | No — will not appear in `grob search` |
+
+## Generic Functions
+
+Plugins that expose generic functions (like `mapAs<T>()`) must express type
+parameters via `FunctionSignature` in `Grob.Runtime`. This is designed into the
+SDK from the start.
+
+## Recommended Repository Structure
+
+```
+grob-plugin-xml/
+├── src/
+│   └── AcmeCorp.Xml/
+│       ├── AcmeCorp.Xml.csproj
+│       ├── XmlPlugin.cs
+│       └── ...
+├── tests/
+│   └── AcmeCorp.Xml.Tests/
+├── examples/
+│   └── parse-config.grob
+├── README.md
+└── LICENSE
+```
+
 ## Publishing
 
-Publish to NuGet tagged `grob-plugin`. Users install with `grob install`.
+Publish to NuGet with the `grob-plugin` tag. This makes the plugin discoverable
+via `grob search`.
 
-## Development
+`Grob.Runtime` is versioned independently from the runtime. Your plugin declares
+which version it targets — this is the compatibility contract.
 
-Use `--dev-plugin` to load a local `.dll` during development:
-
-```
-grob run script.grob --dev-plugin MyPlugin.dll
-```
-
-See also: [Overview](Overview.md)
+See also: [Overview](Overview.md), [Community Registry](Community-Registry.md)

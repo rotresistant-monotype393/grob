@@ -1,0 +1,9 @@
+error[E0201]: reassignment of `const` binding
+  --> const-reassignment.grob:4:1
+   |
+ 4 | maxRetries = 5
+   | ^^^^^^^^^^^^^^
+   |
+   = note: 'maxRetries' was declared `const` on line 2
+   = help: for a binding evaluated once at runtime, use `readonly`
+   = help: for a mutable binding, declare with `:=`

@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Grob.Runtime</RootNamespace>
-    <AssemblyName>Grob.Runtime</AssemblyName>
-    <!-- Public plugin contract: IGrobPlugin, GrobVM registration surface,
-         FunctionSignature, GrobError hierarchy.
-         Published as a NuGet package. Plugin authors reference this only. -->
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Grob.Core\Grob.Core.csproj" />
+    <ProjectReference Include="..\Grob.Core\Grob.Core.csproj" />
   </ItemGroup>
 
 </Project>

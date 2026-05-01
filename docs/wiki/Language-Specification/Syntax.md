@@ -12,12 +12,23 @@ x := 42                  // declare and assign — x is int (inferred)
 x = 100                  // reassign — x must already exist
 x: int := 42             // explicit type annotation — always valid, never required here
 
-const MAX := 100         // immutable binding
-const MAX: int := 100    // immutable binding, explicit type
+const MAX := 100         // compile-time constant — value must be a literal or compile-time expression
+const API_VERSION: int := 2
+
+readonly base_url := env.require("BASE_URL")  // runtime-once — set once, never reassigned
 
 name: string? := nil     // annotation required — nil provides no type information
 items: int[] := []       // annotation required — [] provides no element type
 ```
+
+`const` is for compile-time-constant bindings only (D-288). The value must be
+resolvable at compile time: a literal, a compile-time arithmetic expression, or
+a reference to another `const`. It cannot depend on runtime input.
+
+`readonly` is for runtime-once bindings (D-289). The value is computed at
+runtime but assigned exactly once — the compiler prevents reassignment. Use
+`readonly` for values derived from environment variables, config files, or
+computed setup values that must not change after initialisation.
 
 Every variable must be initialised at declaration. There are no uninitialised
 variables in Grob. A declaration without a value is a compile error.
@@ -61,7 +72,7 @@ the newline.
 // Leading dot — recommended for method chains
 result := files
     .filter(f => f.extension == ".log")
-    .map(f => f.name)
+    .select(f => f.name)
     .sort()
 
 // Trailing operator
@@ -102,41 +113,16 @@ semantics will be attached when `grob doc` tooling exists post-MVP.
 `C:\Users\chris`        // raw strings for Windows paths
 ```
 
-Triple backtick strings are available for multiline verbatim content (SQL, JSON
-templates, multiline command strings):
-
-```grob
-query := ```
-SELECT *
-FROM users
-WHERE active = 1
-```
-```
-
-Double-quoted strings support escape sequences (`\n`, `\r`, `\t`, `\\`, `\"`,
-`\$`) and interpolation (`${expr}`). Any unknown `\x` sequence is a compile
-error. Single backtick strings suppress all escape processing. Triple backtick
-strings preserve content verbatim across multiple lines.
-
-Single-quoted strings (`'value'`) are not valid in Grob.
+Single-quoted strings are not valid. Double-quoted strings support escape
+sequences (`\n`, `\t`, `\\`, `\"`) and interpolation (`${expr}`). Raw strings
+suppress all escape processing. Double-quoted strings do not span lines; raw
+strings do.
 
 ## Naming Conventions
 
 Grob recommends `snake_case` for variables, functions and parameters. The
 compiler produces a warning (not an error) for other naming styles. Type names
 use `PascalCase`.
-
-## Trailing Commas
-
-Trailing commas are permitted in all comma-separated lists — array literals,
-struct construction, map literals, function parameters and function arguments.
-`grob fmt` normalises trailing comma usage.
-
-## Shadowing
-
-A local variable may shadow a variable from an enclosing scope. The compiler
-emits a warning, not an error. Preventing shadowing entirely is annoying in
-real scripts where short variable names are naturally reused.
 
 See also: [Types](Types.md), [Operators](Operators.md),
 [Control Flow](Control-Flow.md)

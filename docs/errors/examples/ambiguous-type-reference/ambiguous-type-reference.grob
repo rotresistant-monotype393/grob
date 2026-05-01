@@ -1,0 +1,7 @@
+// E3101 — two imported plugins each register a type named `Response`
+import Grob.Http
+import Acme.Api
+
+fn handle(r: Response): int {
+    return r.statusCode
+}

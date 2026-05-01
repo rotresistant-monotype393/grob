@@ -1,0 +1,8 @@
+error[E2001]: unexpected token
+  --> unexpected-token-missing-brace.grob:4:5
+   |
+ 4 |     return "Hello, ${name}"
+   |     ^^^^^^
+   |
+   = note: expected `{` to open the function body
+   = note: got keyword `return`

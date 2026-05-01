@@ -1,0 +1,6 @@
+// E0001 — adding an int to a bool, with no obvious fix
+fn nextStep(active: bool): int {
+    return active + 1
+}
+
+print(nextStep(true))

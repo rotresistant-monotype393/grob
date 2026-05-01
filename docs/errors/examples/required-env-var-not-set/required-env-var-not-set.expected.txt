@@ -1,0 +1,8 @@
+error[E5801]: required environment variable not set
+  --> required-env-var-not-set.grob:3:9
+   |
+ 3 | token := env.require("DEPLOY_TOKEN")
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: environment variable 'DEPLOY_TOKEN' is not set
+   = help: set the variable before running the script, or use `env.get("DEPLOY_TOKEN")` to handle the absent case

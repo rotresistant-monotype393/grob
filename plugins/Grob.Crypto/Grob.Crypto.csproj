@@ -1,14 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Grob.Crypto</RootNamespace>
-    <AssemblyName>Grob.Crypto</AssemblyName>
-    <!-- First-party checksums and hashing plugin: MD5, SHA256, file integrity.
-         References Grob.Runtime only. -->
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <PackageTags>grob-plugin</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Grob.Core\Grob.Core.csproj" />
     <ProjectReference Include="..\..\src\Grob.Runtime\Grob.Runtime.csproj" />
   </ItemGroup>
 

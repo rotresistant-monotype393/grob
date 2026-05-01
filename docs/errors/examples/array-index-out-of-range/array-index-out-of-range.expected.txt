@@ -1,0 +1,9 @@
+error[E5101]: array index out of range
+  --> array-index-out-of-range.grob:4:7
+   |
+ 4 | print(names[5])
+   |       ^^^^^^^^
+   |
+   = note: 'names' has length: 3
+   = note: index requested: 5
+   = note: valid indices: 0 to 2

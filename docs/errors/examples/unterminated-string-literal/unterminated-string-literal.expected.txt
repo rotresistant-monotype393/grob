@@ -1,0 +1,13 @@
+error[E2002]: unterminated string literal
+  --> unterminated-string-literal.grob:3:12
+   |
+ 3 |     return "Welcome to Grob
+   |            ^^^^^^^^^^^^^^^^
+ 4 | }
+   | ^
+ 5 |
+ 6 | print(banner())
+   | ^^^^^^^^^^^^^^^
+   |
+   = note: string literal opened on line 3 was never closed before end of file
+   = help: close the string with `"` on the same line, or use a backtick raw string for multi-line content

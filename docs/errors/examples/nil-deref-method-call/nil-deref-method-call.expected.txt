@@ -1,0 +1,9 @@
+error[E0101]: nil dereference without `?.` or `??`
+  --> nil-deref-method-call.grob:3:12
+   |
+ 3 |     return name.toUpper()
+   |            ^^^^^^^^^^^^^^
+   |
+   = note: 'name' has type string?
+   = help: short-circuit on nil with optional chaining: `name?.toUpper()`
+   = help: provide a fallback with nil coalescing: `(name ?? "").toUpper()`

@@ -1,0 +1,9 @@
+error[E0004]: argument type mismatch
+  --> argument-type-mismatch-string-for-int.grob:7:15
+   |
+ 7 | print(repeat("ten"))
+   |               ^^^^^
+   |
+   = note: parameter 'count' has type int
+   = note: argument has type string
+   = help: convert with `"ten".toInt()` — note that `toInt()` returns int?

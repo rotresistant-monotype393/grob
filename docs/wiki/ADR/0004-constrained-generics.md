@@ -2,24 +2,40 @@
 
 **Status:** Accepted
 **Date:** April 2026
-**Decision:** The type checker and compiler understand generic type parameters internally. Users consume but cannot declare generic functions or types in v1.
+**Decision:** Users consume generic functions but cannot declare them in v1.
 
 ## Context
 
-OQ-001. `mapAs<T>()`, `filter`, `map` and typed collections require the compiler to understand generic type parameters. The question was how much generic infrastructure to expose to users.
+Type-safe collections and JSON deserialisation (`mapAs<T>()`) require the type
+system to understand generic type parameters. Full user-facing generics is a
+large feature surface. The question was how much to expose in v1.
 
 ## Decision
 
-Constrained generics. The internal machinery exists. Users consume generic functions via stdlib and plugins. User-facing generic declarations are a post-MVP additive grammar extension.
+Constrained generics. The type checker and compiler understand generic type
+parameters internally. Users consume generic functions via stdlib and plugins
+(`mapAs<T>()`, `filter`, `map` etc) but cannot declare generic functions or
+types in v1.
+
+Evolution to user-facing generics is additive — a grammar extension only, no
+architectural rework required. Analogous to Go pre-1.18.
 
 ## Alternatives Considered
 
-**Full generics** — users can declare `fn identity<T>(x: T): T`. Non-trivial scope for v1.
+**No generics** — would require `mapAsRepo()`, `mapAsTask()` etc as separate
+functions per type. Untenable for a typed collections API.
 
-**Special-cased** — `mapAs<T>()` as a one-off. Dead end — no path to typed `Stack<T>`.
+**Full user-facing generics in v1** — significantly larger implementation scope.
+Generic function and type declaration syntax, constraint syntax, type parameter
+inference. Not proportional to v1 use cases.
 
 ## Consequences
 
-Positive: type-safe collections and JSON deserialisation without committing to full generic syntax on day one. Closes no doors.
+Positive: type-safe collections and JSON without committing to full generic
+syntax. Smaller v1 implementation. Clean additive path to full generics.
 
-Negative: power users cannot write their own generic abstractions in v1. Acceptable — the stdlib covers the common cases.
+Negative: users cannot write their own generic functions in v1. This is
+acceptable — the stdlib and plugin functions cover the primary use cases.
+
+Plugins that expose generic functions must express type parameters via
+`FunctionSignature` in `Grob.Runtime`. Designed in from the start.

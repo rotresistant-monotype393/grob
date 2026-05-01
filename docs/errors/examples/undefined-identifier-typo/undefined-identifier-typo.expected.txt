@@ -1,0 +1,7 @@
+error[E1001]: undefined identifier
+  --> undefined-identifier-typo.grob:3:22
+   |
+ 3 |     return "Hello, ${nmae}"
+   |                      ^^^^
+   |
+   = note: 'nmae' is not declared in any enclosing scope

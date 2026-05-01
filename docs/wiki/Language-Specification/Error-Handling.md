@@ -1,63 +1,84 @@
 # Error Handling
 
-## Two-Mode Error Strategy
+## Two-Mode Strategy
 
-**Compile time:** The compiler and type checker collect ALL errors before
-execution — they never stop at the first error. A programme with type errors
-never reaches the VM.
+Grob uses a two-mode error strategy:
 
-**Runtime:** The VM stops on the FIRST runtime error. Unhandled exceptions
-propagate to the VM top level — a Grob-quality diagnostic is produced and the
-script halts.
+**Compile time** — the compiler and type checker collect all errors before
+execution. They never stop at the first error. A program with type errors never
+reaches the VM.
 
-## `try/catch`
+**Runtime** — the VM stops on the first runtime error. An unhandled exception
+produces a Grob-quality diagnostic and halts the script.
+
+## Exceptions
+
+Exceptions are the runtime error model. Functions throw on failure. Unhandled
+exceptions propagate to the VM top level.
+
+```grob
+content := fs.readText("C:\\config.json")   // throws IoError if file not found
+```
+
+## `try / catch`
 
 ```grob
 try {
-    data := json.read("C:\\config.json")
+    data := fs.readText("C:\\config.json")
+    config := json.parse(data)
 } catch IoError e {
     log.error("File not found: ${e.message}")
+    exit(1)
 } catch JsonError e {
     log.error("Invalid JSON: ${e.message}")
+    exit(1)
 } catch e {
     log.error("Unexpected error: ${e.message}")
+    exit(1)
 }
 ```
 
-Multiple typed catch blocks are supported. Bare `catch e` is the catch-all and
-must appear last. A catch block after a catch-all is a compile error.
+Multiple catch blocks are supported. Typed catches match specific exception
+types. Bare `catch e` is the catch-all and must appear last. A catch block after
+a catch-all is a compile error, not a warning.
 
 ## Exception Hierarchy
 
-The exception type hierarchy is a `Grob.Runtime` concern:
+The exception hierarchy is a `Grob.Runtime` concern — part of the standard
+library, not the language grammar.
 
 | Type | Description |
 |------|-------------|
-| `GrobError` | Root type — all exceptions inherit from this |
+| `GrobError` | Root of all Grob exceptions |
 | `IoError` | File system and I/O failures |
 | `NetworkError` | HTTP and network failures |
-| `JsonError` | JSON parse and shape mismatch errors |
-| `ProcessError` | External process failures and timeouts |
+| `JsonError` | JSON parse failures |
+| `ProcessError` | External command failures |
 | `NilError` | Nil dereference at runtime |
-| `RuntimeError` | General runtime errors (overflow, index out of range) |
+| `RuntimeError` | General runtime failures |
 
 User-defined exception types are deferred post-MVP.
 
-## Error Message Design
+## Error Messages
 
 Error messages show variable names and types, never values. This prevents
 accidental credential exposure in terminal output and logs. The `--verbose` flag
 overrides this for debugging.
 
 ```
-Type error on line 14:
-  Expected  int
-  Got       string
-
-  The function add() requires two int arguments.
-  'name' is a string. Did you mean to convert it first?
-
-  Hint: name.toInt() returns int? — check for nil before passing it.
+IoError on line 7:
+  File not found.
+  Path variable 'config_path' (string) could not be read.
 ```
 
-See also: [Functions](Functions.md), [Modules and Imports](Modules-and-Imports.md)
+## Exit Codes
+
+| Condition | Exit code |
+|-----------|-----------|
+| Normal script completion | `0` |
+| `exit()` with no argument | `0` |
+| `exit(n)` | `n` |
+| Unhandled `GrobError` | `1` |
+
+See also: [Functions](Functions.md), [Expressions](Expressions.md),
+[Error Messages](../CLI/Error-Messages.md)

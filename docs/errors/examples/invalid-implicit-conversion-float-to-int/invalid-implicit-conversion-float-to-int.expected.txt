@@ -1,0 +1,9 @@
+error[E0007]: invalid implicit conversion
+  --> invalid-implicit-conversion-float-to-int.grob:4:20
+   |
+ 4 |     result: int := raw
+   |                    ^^^
+   |
+   = note: 'raw' has type float; 'result' is declared as int
+   = note: the only permitted implicit conversion is int → float, not float → int
+   = help: convert explicitly with `raw.toInt()`

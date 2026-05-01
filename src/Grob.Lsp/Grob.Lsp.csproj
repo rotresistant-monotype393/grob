@@ -3,21 +3,14 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Grob.Lsp</RootNamespace>
+    <AssemblyName>grob-lsp</AssemblyName>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <RootNamespace>Grob.Lsp</RootNamespace>
-    <AssemblyName>Grob.Lsp</AssemblyName>
-    <!-- Language server — LSP implementation.
-         Runs as a standalone process started by the VS Code extension.
-         Consumes Grob.Compiler for editor intelligence — never executes scripts.
-         Does NOT reference Grob.Vm. The LSP analyses code, it never runs it. -->
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="OmniSharp.Extensions.LanguageServer" />
-  </ItemGroup>
-
+  <!-- Grob.Lsp must NOT reference Grob.Vm — it analyses code, never runs it -->
   <ItemGroup>
     <ProjectReference Include="..\Grob.Core\Grob.Core.csproj" />
     <ProjectReference Include="..\Grob.Runtime\Grob.Runtime.csproj" />

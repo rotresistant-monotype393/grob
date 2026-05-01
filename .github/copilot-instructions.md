@@ -1,149 +1,232 @@
-# Grob — Copilot Instructions
+# Grob — Agent and Copilot Instructions
 
-## Project Identity
+This file is read by every AI coding surface that touches this repository —
+Copilot inline completion, Copilot chat, Copilot agent mode, Claude Code, and
+any future agent tool. Its guidance applies across all of them. Where a section
+references behaviour specific to one tool (e.g. plan mode in Copilot agent mode),
+that is called out explicitly.
 
-Grob is a statically typed scripting language with a bytecode VM, written in
-C# .NET 10. It is a serious project — not a toy, not a prototype. Every line
-of code should be written as if it will ship.
-
-The wiki specification in `docs/wiki/` is the authority for language behaviour.
-The decisions log in `docs/design/decisions-log.md` is the authority for design
-decisions. When in doubt, check those documents before generating code.
-
----
-
-## Implementation Context
-
-- **Language:** C# .NET 10
-- **Solution format:** `Grob.slnx` — the XML-based solution format, not legacy `.sln`
-- **Target platform:** Windows-native. All paths in examples and tests use
-  Windows conventions. No Unix paths, no Unix commands.
-- **IDE:** Visual Studio Code on Windows
-- **Architecture:** Lexer → Parser → Type Checker → Compiler → Bytecode VM
-- **AST passes:** Visitor pattern — three passes (type checker, optimiser,
-  compiler) walk the same AST. Visitor earns its place here.
-- **Value types:** `struct` for stack-allocated value types (int, float, bool).
-  `class` for heap objects only (string, array, function).
-- **Compiler organisation:** `partial class` files for physical separation of
-  concerns within `Grob.Compiler`. Same namespace, same assembly.
-- **Standard library:** Implemented as `IGrobPlugin` instances, auto-registered
-  at VM startup by `Grob.Cli`. Not hardwired into the VM.
+Read this file in full before generating any code, editing any file, or running
+any terminal command. If anything here conflicts with a general default behaviour,
+this file wins.
 
 ---
 
-## Namespace Conventions
+## Section A — Project Facts
 
-Namespaces are adjectives or gerunds — never the same word as the class they contain.
-This prevents `Grob.Compiler.Lexer.Lexer` and similar clashes.
+**What Grob is.** Grob is a statically typed scripting language with a bytecode
+VM, written in C# .NET 10 LTS. It is a hobby project but not a toy — it is a
+serious attempt to fill the gap between Go (too ceremonious for scripts),
+PowerShell (syntactically hostile), and Python (dynamically typed and clunky at
+scale). Every design decision, every line of code, every document is made with
+that in mind.
 
-| Namespace | Contains |
-|---|---|
-| `Grob.Core` | `Chunk`, `OpCode`, `GrobType`, `GrobValue`, `ConstantPool`, `SourceLocation` |
-| `Grob.Runtime` | `IGrobPlugin`, `GrobVM`, `FunctionSignature`, `GrobError` hierarchy |
-| `Grob.Compiler.Lexing` | `Lexer`, `Token`, `TokenType`, `LexError` |
-| `Grob.Compiler.Parsing` | `Parser`, `ParseError` |
-| `Grob.Compiler.Parsing.Ast` | All AST node types |
-| `Grob.Compiler.TypeChecking` | `TypeChecker`, `TypeRegistry`, `Symbol` |
-| `Grob.Compiler.Emitting` | `Compiler` (the bytecode emitter) |
-| `Grob.Vm` | `VirtualMachine`, `ValueStack`, `CallFrame`, `Globals`, `PluginLoader` |
-| `Grob.Stdlib` | `FsPlugin`, `JsonPlugin`, and all other stdlib plugin classes |
-| `Grob.Cli` | `Program`, `RunCommand`, `ReplCommand`, and all CLI command classes |
+**Solution structure.** Seven source projects, three first-party plugins, five
+test projects:
 
-The rule: if the namespace and the primary class it contains would share the same
-name, the namespace needs a different word. `Lexing` not `Lexer`. `Parsing` not
-`Parser`. `TypeChecking` not `TypeChecker`. `Emitting` not `Compiler`. `Ast` is
-fine — there is no class called `Ast`.
+```
+src/
+  Grob.Core        shared primitives: Chunk, OpCode, GrobType, GrobValue, SourceLocation
+  Grob.Runtime     plugin contract: IGrobPlugin, GrobVM surface, FunctionSignature, GrobError hierarchy
+  Grob.Compiler    lexer, parser, AST, type checker, codegen (partial class organisation)
+  Grob.Vm          VM execution engine: fetch/decode/execute, value stack, call frames, PluginLoader
+  Grob.Stdlib      all thirteen core modules as IGrobPlugin implementations
+  Grob.Cli         entry point, REPL, all CLI commands, composition root
+  Grob.Lsp         language server (LSP)
 
----
+plugins/
+  Grob.Http        first-party HTTP plugin; reference implementation; auth.* sub-namespace lives here
+  Grob.Crypto      checksums and hashing
+  Grob.Zip         archive operations
 
-## Naming Conventions
+tests/
+  Grob.Core.Tests
+  Grob.Compiler.Tests
+  Grob.Vm.Tests
+  Grob.Stdlib.Tests
+  Grob.Integration.Tests
+```
 
-- Type prefix is always `Grob` in full — `GrobType`, `GrobValue`, `GrobError`.
-  Never abbreviated to `Gro`. `GroType` is wrong. `GrobType` is correct.
-- `PascalCase` for types and public members
-- `camelCase` for local variables
-- `_camelCase` for private fields
-- British English in all documentation, comments and XML doc comments
-- No Oxford comma
+**Dependency graph — DAG, no cycles:**
 
----
+- `Grob.Compiler` and `Grob.Vm` never reference each other.
+- `Grob.Core` is the only shared ground between them. `Chunk` lives there
+  because both compiler (produces) and VM (consumes) need it.
+- `Grob.Cli` is the only project that references all other source assemblies.
+- `Grob.Lsp` references `Grob.Compiler`, `Grob.Core`, `Grob.Runtime` — never
+  `Grob.Vm`. It analyses code; it never runs it.
+- First-party plugins reference `Grob.Runtime` only. If a plugin needs more,
+  the plugin model is broken.
 
-## Code Style
+**Target framework:** `net10.0` throughout. No exceptions.
 
-- Same-line braces in C# code
-- No `var` where the type is not immediately obvious from the right-hand side
-- Prefer `switch` expressions over `if/else` chains for type dispatch
-- `readonly` and `const` wherever applicable
-- Structs for value types — no GC pressure. Classes for heap objects only.
-- `snake_case` for Grob language identifiers in code examples and tests
+**Thirteen core stdlib modules** — auto-available, no `import` required:
+`fs`, `strings`, `json`, `csv`, `env`, `process`, `date`, `math`, `log`,
+`regex`, `path`, `formatAs`, `guid`.
 
----
+The module is `formatAs` — not `format`. Renamed D-282. Any reference to a
+`format` module is stale and incorrect.
 
-## TDD Discipline
+**Error model.** Two-mode: compiler and type checker collect ALL errors before
+execution. VM stops on FIRST runtime error. Ten-leaf exception hierarchy under
+`GrobError`: `IoError`, `NetworkError`, `JsonError`, `ProcessError`, `NilError`,
+`ArithmeticError`, `IndexError`, `ParseError`, `LookupError`, `RuntimeError`.
 
-Tests are written before implementation, not after.
+Error code registry — seven categories:
+`E0xxx` (type), `E1xxx` (name resolution), `E2xxx` (syntax),
+`E3xxx` (module/import), `E4xxx` (param/decorator), `E5xxx` (runtime),
+`E9xxx` (reserved). `Wxxxx` reserved for future warnings. 86 codes total.
+Codes are immutable once shipped (ADR-0017).
 
-For every new type or method:
-1. Write the test. Confirm it fails.
-2. Write the implementation. Confirm the test passes.
+**GrobValue.** Hand-rolled `readonly struct`, 24 bytes on x64, nine-variant
+discriminator. `int`, `float`, `bool` stored inline — zero GC pressure.
+`string`, `array`, `function`, `struct` use the heap reference field.
+Encapsulated factory surface — never construct `GrobValue` directly.
 
-Do not write implementation code and test code in the same step. Test files
-in `Grob.Compiler.Tests` are the highest priority — bugs live in the compiler.
-The VM loop can be trusted once verified on simple cases.
+Do NOT use the .NET `union` keyword. Its compiler-generated form boxes
+value-type cases on every assignment — wrong cost profile for a VM hot path.
+The project targets .NET 10 LTS; the hand-rolled struct is correct.
 
-- Test compiler outputs exhaustively: given source, assert correct bytecode
-- Test error paths as thoroughly as happy paths
-- Every compiler change requires tests
-- Test standard library functions independently via plugin registration
-
----
-
-## Compiler Construction Rules
-
-- Every AST node carries a `SourceLocation` — enforced by the base class
-  constructor, not by convention. This is a day-one requirement. Do not
-  create AST nodes without source location.
-- Every identifier node resolved by the type checker carries a `Declaration`
-  back-reference to its declaration node. Required for go-to-definition.
-- The compiler and type checker collect ALL errors before execution stops.
-  Never halt at the first error in the compiler pipeline.
-- The VM stops on the FIRST runtime error. These are different strategies
-  and must not be confused.
-- `Grob.Compiler` and `Grob.Vm` never reference each other. `Grob.Core`
-  is the only shared ground between them.
+**Canonical documents** live in `docs/design/`. The decisions log
+(`docs/design/grob-decisions-log.md`) is the authority. The wiki in
+`docs/wiki/` is a derived view. Where they disagree, the decisions log wins.
 
 ---
 
-## Language Rules — Do Not Violate
+## Section B — Conventions
 
-- No semicolons — Grob uses newline termination with implicit continuation
-- Declaration is `:=` — there is no `var` keyword in the Grob language
-- `#{` is a single token — the anonymous struct opener, not `#` followed by `{`
-- All type checking happens at compile time — no dynamic type checks at runtime
-- Method-call syntax on primitives is compiler sugar — primitives are never boxed
-- The `Grob` type prefix is always used in full — `GrobValue` not `GroValue`
-- No pipe operator `|` inside scripts — fluent chaining is the in-script idiom
-- `else if` is two keywords — not `elif`
+These apply to every line of code, every comment, every error message, and every
+documentation edit. They bind on inline completion as much as agent mode.
+
+**British English throughout.** No Oxford comma. Never the word "simply" in any
+documentation or comment. No emoji in CLI output, error messages, REPL output,
+or normative documentation.
+
+**Naming — the `Grob` prefix is always used in full. Never `Gro`.**
+
+| Correct | Incorrect |
+|---------|-----------|
+| `GrobType` | `GroType` |
+| `GrobValue` | `GroValue` |
+| `GrobError` | `GroError` |
+| `GrobChunk` | `GroChunk` |
+
+This is an absolute rule enforced by ADR-0012.
+
+**C# code style.**
+
+- `PascalCase` for types and public members.
+- `camelCase` for locals and parameters.
+- `_camelCase` for private fields.
+- `partial class` throughout `Grob.Compiler` for physical separation of
+  concerns within the same namespace.
+- `struct` for value types. `class` for heap objects only.
+- Same-line braces.
+- `var` only where the type is obviously visible from the right-hand side.
+- `switch` expressions over `if/else` chains for type dispatch.
+
+**Grob language conventions** (for examples, tests, and documentation).
+
+- `snake_case` for variable and function names in Grob source.
+- `:=` declares and assigns on first use. `=` reassigns. No `var` keyword.
+- `const` is for compile-time-constant bindings only (D-288). Not a general
+  immutability marker.
+- `readonly` is for runtime-once bindings — set once at runtime, never
+  reassigned (D-289).
+- String interpolation: `"Hello ${name}"` — dollar sign, curly braces.
+- Windows paths in backtick raw strings: `` `C:\Reports\file.txt` `` — not
+  double-quoted with escapes (D-285).
+- No semicolons. Newline is the statement terminator.
+- `.select()` is the projection method on arrays — not `.map()`. The name
+  `.map()` does not exist in Grob (D-280). `.mapAs<T>()` is distinct:
+  typed deserialisation on JSON and CSV results only.
+- `print()`, `input()`, `exit()` are built-ins resolved at type-check time.
+  They are not keywords (D-270).
+
+**Test discipline.** Every behavioural change has a corresponding xunit test in
+the matching `.Tests` project. Tests live in their own projects. Test compiler
+outputs exhaustively — given source text, assert emitted bytecode. The VM loop
+can be trusted once verified on simple cases; bugs live in the compiler.
+
+**Decisions log primacy.** Before writing code that involves a design choice,
+check `docs/design/grob-decisions-log.md`. If the canonical docs appear to
+conflict on a point, the decisions log wins.
 
 ---
 
-## What Not To Do
+## Section C — Behavioural Expectations
 
-- Do not generate code that has not been reviewed and understood by the
-  developer. This is AI-augmented development, not vibe coding.
-- Do not use `cat`, `ls` or other Unix commands in any example or test
-- Do not use the word "simply" in any documentation or comment
-- Do not add emoji to compiler output, CLI output or error messages
-- Do not introduce semicolons
-- Do not box primitives
-- Do not write tests after implementation — tests come first
+These govern how an AI agent plans and executes work. They apply most directly
+in agent mode (Copilot agent mode, Claude Code, or equivalent). Inline
+completion is unaffected.
+
+**Plan first, execute second.** Always present an execution plan before editing
+files or running terminal commands. For Copilot agent mode: use plan mode to
+scope the task before switching to agent mode to execute. A plan check that
+surfaces a misunderstanding saves a multi-minute agent run that produces wrong
+output. After test failures, present what you intend to change before iterating.
+
+**Sprint-bound scope.** The active sprint is in
+`docs/design/grob-v1-requirements.md`. Do not create files outside the active
+sprint's scope without explicit confirmation. Do not add features not in the
+current sprint's acceptance criteria. If a task surfaces a need to touch
+out-of-scope files, stop and ask before proceeding.
+
+**Three-iteration test discipline.** Run tests after every change. Iterate
+against failures up to three times. After three failed iterations, stop and
+report the state. The engineer is better placed to redirect once context is lost.
+
+**Stop-and-ask triggers.** Halt and seek confirmation when:
+
+- A task requires touching files outside the active sprint's scope.
+- The decisions log is silent on a design question that affects implementation.
+- Two canonical docs disagree and the decisions log does not resolve it.
+- A terminal command would touch files outside the project root, perform a
+  destructive operation (`rm -rf`, `git push --force`, package uninstall), or
+  invoke external services.
+- The implementation requires a new opcode, error code, keyword, or stdlib API
+  that does not already exist in the canonical docs.
+
+**No invented design decisions.** The canonical docs almost certainly cover any
+choice that looks like it needs one — search `docs/design/` first. If they
+genuinely do not cover it, stop and ask. Do not invent.
+
+**No new D-### entries from agent work.** The decisions log is maintained by
+Chris. Agent work may propose; Chris decides and records.
+
+**This is AI-augmented development, not vibe coding.** AI can write code,
+suggest implementations, and review work. Chris understands and owns every
+decision and every line. Produce code that is ready to be understood and reviewed.
 
 ---
 
-## Key References
+## Section D — Token Budget Guidance
 
-- `docs/wiki/Language-Specification/` — language syntax and semantics
-- `docs/wiki/Standard-Library/` — all twelve core module APIs
-- `docs/wiki/Type-Registry/` — built-in type members (compiler reference)
-- `docs/wiki/VM-Architecture/` — bytecode VM design
-- `docs/design/decisions-log.md` — authoritative design decisions
+Applies to metered agent interactions (Copilot Pro+ agent mode, Claude Code, or
+any future metered tool). The goal is correct output on the first attempt.
+
+**Prefer cheaper models for routine work.** Standard-tier models are correct for
+boilerplate, test scaffolding, doc updates, mechanical refactors, and exhaustive-
+but-shallow changes. Reserve the most capable model for genuinely hard reasoning:
+parser edge cases, type-checker logic, design judgement on ambiguous spec,
+multi-file refactors with non-trivial dependencies.
+
+**Plan mode before agent mode (Copilot-specific).** Scope tasks in plan mode
+before executing in agent mode. This surfaces misunderstandings before they
+consume budget.
+
+**One task per session.** Avoid parallel sub-agent workflows. Solo-development
+gains nothing from parallelism and pays tokens at multiples.
+
+**Prefer concise diffs over wholesale rewrites.** Targeted edits consume output
+tokens proportional to the change. Wholesale rewrites consume tokens proportional
+to the file. When a small change will do, make the small change.
+
+**Stop after three iterations.** Three iterations is sufficient to surface that
+the agent has lost the thread. Further iterations burn budget without improving
+output. Stop and report.
+
+---
+
+*Keep this file current. Update it in the same commit as the canonical doc change
+that necessitates an update. Its accuracy is load-bearing.*

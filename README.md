@@ -1,11 +1,6 @@
 # Grob
 
-[![CI](https://github.com/grob-lang/grob/actions/workflows/ci.yml/badge.svg)](https://github.com/grob-lang/grob/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
-[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com)
-[![Status](https://img.shields.io/badge/status-design%20complete-orange)](docs/design/decisions-log.md)
-
-_A statically typed scripting language that a hobbyist can learn and a developer can trust._
+*A statically typed scripting language that a hobbyist can learn and a developer can trust.*
 
 ---
 
@@ -38,13 +33,13 @@ readable scripting cleanly. Grob is designed to fill that gap.
 ## Status
 
 Grob is being built in the open. The language design is complete — implementation
-has not yet begun.
+has not yet begun. Sprint 1 begins after the solution skeleton is finalised.
 
 What exists today:
 
 - Full language specification covering syntax, types, control flow, operators,
   functions, error handling, script parameters and modules
-- Twelve core standard library modules, fully specified
+- Thirteen core standard library modules, fully specified
 - Built-in type method registry — compiler and type checker reference
 - VM architecture design — stack-based bytecode VM in C# .NET
 - Plugin ecosystem model with NuGet as the package registry
@@ -64,7 +59,7 @@ The full specification lives in the [wiki](docs/wiki/Home.md):
 
 - [Language Specification](docs/wiki/Language-Specification/Syntax.md) — syntax,
   types, control flow, operators, expressions
-- [Standard Library](docs/wiki/Standard-Library/fs.md) — all twelve core modules
+- [Standard Library](docs/wiki/Standard-Library/fs.md) — all thirteen core modules
 - [Type Registry](docs/wiki/Type-Registry/string.md) — built-in type members
 - [VM Architecture](docs/wiki/VM-Architecture/Overview.md) — bytecode VM design
 - [CLI](docs/wiki/CLI/Commands.md) — commands, install strategy, error messages
@@ -87,5 +82,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-_Grob is a hobby project but it is not a toy._
-
+*Grob is a hobby project but it is not a toy.*

@@ -1,0 +1,6 @@
+// E0101 — calling a method on a nullable string without ?. or ??
+fn shoutName(name: string?): string {
+    return name.toUpper()
+}
+
+print(shoutName("ada"))
